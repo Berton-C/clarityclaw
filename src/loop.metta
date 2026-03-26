@@ -5,7 +5,7 @@
 (= (reasoningMode) (empty))
 
 (= (initLoop)
-   (progn (configure maxLoops 50) ;20
+   (progn (configure maxLoops 99999) ;20
           (configure sleepInterval 1) ;10
           (configure LLM gpt-5.4)
           (configure maxOutputToken 6000)
