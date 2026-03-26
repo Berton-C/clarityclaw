@@ -1,4 +1,5 @@
 !(import! &self (library lib_import))
-!(import! &self /app/PeTTa/repos/mettaclaw/lib_mettaclaw)
+!(static-import! "/app/PeTTa/repos/mettaclaw")
+!(import! &self (library mettaclaw lib_mettaclaw))
 
 !(mettaclaw)
