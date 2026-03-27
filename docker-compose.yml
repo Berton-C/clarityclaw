@@ -1,0 +1,131 @@
+# docker-compose.yml -- MeTTaClaw / ClarityClaw Phase 1
+# Platform: Mac M4 24GB RAM, Docker Desktop, Rosetta 2
+#
+# PHASE 1: Base MeTTaClaw on OpenAI only.
+# Phase 2 adds LiteLLM for soul evaluation via Claude.
+#
+# Services:
+#   postgres    -- Mattermost database
+#   mattermost  -- Communication channel (free Team Edition, local)
+#   mettaclaw   -- PeTTa + MeTTaClaw agent
+#
+# Inter-container communication: Docker DNS resolves service names.
+# mettaclaw reaches Mattermost at http://mattermost:8065 (internal)
+# You access Mattermost admin at http://localhost:8065 (host browser)
+#
+# Memory: ChromaDB embedded (PersistentClient) -- no separate service.
+# Vectors: lib_vector.metta is pure MeTTa math -- no FAISS binary needed.
+
+version: "3.9"
+
+services:
+
+  # ----------------------------------------------------------------
+  # PostgreSQL -- Mattermost database
+  # ----------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    platform: linux/amd64
+    container_name: clarityclaw_db
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./volumes/db/var/lib/postgresql/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=mmuser
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mmuser_password}
+      - POSTGRES_DB=mattermost
+      - TZ=UTC
+    networks:
+      - clarityclaw_net
+
+  # ----------------------------------------------------------------
+  # Mattermost Team Edition (free, self-hosted)
+  # Access admin UI at: http://localhost:8065
+  # MeTTaClaw connects internally at: http://mattermost:8065
+  # External access on local network: http://[your-mac-ip]:8065
+  # ----------------------------------------------------------------
+  mattermost:
+    image: mattermost/mattermost-team-edition:latest
+    platform: linux/amd64
+    container_name: clarityclaw_mattermost
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "8065:8065"
+    volumes:
+      - ./volumes/app/mattermost/config:/mattermost/config:rw
+      - ./volumes/app/mattermost/data:/mattermost/data:rw
+      - ./volumes/app/mattermost/logs:/mattermost/logs:rw
+      - ./volumes/app/mattermost/plugins:/mattermost/plugins:rw
+      - ./volumes/app/mattermost/client/plugins:/mattermost/client/plugins:rw
+      - ./volumes/app/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
+    environment:
+      - TZ=UTC
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
+      - MM_SQLSETTINGS_DATASOURCE=postgres://mmuser:${POSTGRES_PASSWORD:-mmuser_password}@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+      - MM_BLEVESETTINGS_INDEXDIR=/mattermost/bleve-indexes
+      - MM_SERVICESETTINGS_SITEURL=http://localhost:8065
+      # Allow internal connections (mettaclaw -> mattermost API)
+      - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=mettaclaw,localhost,127.0.0.1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8065/api/v4/system/ping"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    networks:
+      - clarityclaw_net
+
+  # ----------------------------------------------------------------
+  # MeTTaClaw Agent
+  # Connects to Mattermost at http://mattermost:8065 (Docker internal)
+  # ChromaDB persists to ./volumes/mettaclaw/chroma_db
+  # ----------------------------------------------------------------
+  mettaclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    container_name: clarityclaw_agent
+    # depends_on not needed when COMMCHANNEL=irc (no Mattermost required)
+    # Uncomment if switching back to Mattermost:
+    # depends_on:
+    #   mattermost:
+    #     condition: service_started
+    restart: unless-stopped
+    volumes:
+      # Persistent memory: soul notes, conversation history
+      - ./volumes/mettaclaw/memory:/app/PeTTa/repos/mettaclaw/memory
+      # ChromaDB vector store: soul seeds, all remember()/query() data
+      # CRITICAL: lib_chromadb.py uses PersistentClient(path="./chroma_db") which is
+      # relative to WORKDIR /app/PeTTa — NOT repos/mettaclaw/chroma_db
+      - ./volumes/mettaclaw/chroma_db:/app/PeTTa/chroma_db
+      # ClarityClaw identity prompt (override default MeTTaClaw prompt)
+      - ./memory/prompt.txt:/app/PeTTa/repos/mettaclaw/memory/prompt.txt:ro
+      # Shared files: drop PDFs and docs here on your Mac, ClarityClaw can read them
+      - ./shared_files:/app/PeTTa/repos/mettaclaw/shared_files
+      # Fixed IRC client with auto-reconnect (overrides built-in irc.py)
+      - ./channels/irc.py:/app/PeTTa/repos/mettaclaw/channels/irc.py:ro
+      # (Phase 2) Uncomment to mount soul kernel for live edits:
+      # - ./src/soul_kernel.metta:/app/PeTTa/repos/mettaclaw/src/soul_kernel.metta:ro
+    environment:
+      # OpenAI API key -- used for gpt-5.4 chat AND text-embedding-3-large
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Mattermost: internal Docker DNS resolves "mattermost" to the container
+      - MM_URL=http://mattermost:8065
+      - MM_CHANNEL_ID=${MM_CHANNEL_ID}
+      - MM_BOT_TOKEN=${MM_BOT_TOKEN}
+      # Communication channel
+      - COMMCHANNEL=${COMMCHANNEL:-mattermost}
+    networks:
+      - clarityclaw_net
+
+networks:
+  clarityclaw_net:
+    name: clarityclaw_net
+    driver: bridge

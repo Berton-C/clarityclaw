@@ -1,0 +1,29 @@
+# Secrets — NEVER commit
+.env
+
+# Docker volumes — runtime data, not source
+volumes/
+
+# macOS
+.DS_Store
+
+# ChromaDB data (if running outside Docker)
+chroma_db/
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+
+# Shared files (runtime content, not source)
+shared_files/
+
+# Old/deprecated channel code
+channels_old/
+
+# Python bytecode
+__pycache__/
+*.pyc
