@@ -132,5 +132,31 @@ def stop_irc():
     _running = False
 
 def send_message(text):
-    if _connected:
-        _send(f"PRIVMSG {_channel} :{text}")
+    """Send a message to the IRC channel, splitting long text across multiple lines.
+
+    IRC has a hard 512-byte limit per raw message (RFC 2812). After accounting
+    for 'PRIVMSG #channel :' prefix, sender mask, and CRLF, usable payload is
+    roughly 400 chars. We split on newlines first, then chunk any line that
+    exceeds the limit.
+    """
+    if not _connected:
+        return
+    max_len = 400  # conservative — leaves room for protocol overhead
+    # Split on literal \n sequences (MeTTa sends \\n as newline marker)
+    parts = text.replace("\\n", "\n").split("\n")
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        # Chunk long lines
+        while len(part) > max_len:
+            # Try to break at a space
+            split_at = part.rfind(" ", 0, max_len)
+            if split_at == -1:
+                split_at = max_len  # no space found, hard break
+            _send(f"PRIVMSG {_channel} :{part[:split_at]}")
+            part = part[split_at:].lstrip()
+            time.sleep(0.3)  # small delay to avoid flood protection
+        if part:
+            _send(f"PRIVMSG {_channel} :{part}")
+            time.sleep(0.3)
