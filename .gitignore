@@ -27,3 +27,9 @@ channels_old/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Soul architecture runtime files -- never commit
+memory/history.metta
+memory/LTM.metta
+memory/soul_seeded.flag
+memory/soul_audit_log.txt

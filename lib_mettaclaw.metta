@@ -10,6 +10,9 @@
 !(import! &self (library mettaclaw ./src/channels))
 !(import! &self (library mettaclaw ./src/skills))
 !(import! &self (library mettaclaw ./src/memory))
+!(import! &self (library mettaclaw ./soul/soul_kernel))    ;; ClarityClaw soul atoms + accessors
+!(import! &self (library mettaclaw ./soul/soul_utils))     ;; ClarityClaw soul utility functions
+!(import! &self (library mettaclaw ./soul/soul_memory))    ;; ClarityClaw soul seeding + sentinel
 !(import! &self (library mettaclaw ./src/channels))
 !(import! &self (library mettaclaw ./src/context))
 !(import! &self (library mettaclaw ./src/loop))

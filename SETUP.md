@@ -181,4 +181,45 @@ When ready to add soul evaluation (Channels A, B+C, D) using Claude:
 4. Update soul evaluation calls to route through LiteLLM
 
 ---
+
+## Staying Current with Patrick's Upstream
+
+ClarityClaw is a fork of github.com/patham9/mettaclaw. Patrick actively develops
+MeTTaClaw. Run this workflow periodically to incorporate his updates:
+
+### One-time setup (if not already done)
+
+    git remote add upstream https://github.com/patham9/mettaclaw.git
+    git fetch upstream
+
+### Regular upstream sync
+
+    git fetch upstream
+    git merge upstream/main
+
+### Expected merge conflicts
+
+Two files may have conflicts when Patrick updates them:
+
+**lib_mettaclaw.metta:** Patrick may add or reorder imports. Re-apply the three
+ClarityClaw import lines after src/memory if they were displaced:
+
+    !(import! &self (library mettaclaw ./soul/soul_kernel))
+    !(import! &self (library mettaclaw ./soul/soul_utils))
+    !(import! &self (library mettaclaw ./soul/soul_memory))
+
+**src/loop.metta:** Patrick updates the main agent loop frequently. The ClarityClaw
+soul intercepts are at two specific positions. After merging, verify both are present:
+
+- Input intercept: between the `$lastmessage` print and the `$send` assembly
+- Output intercept: between `(println! (RESPONSE: $sexpr))` and `$results` execution
+
+If either was displaced by Patrick's changes, re-apply from the soul implementation
+document.
+
+All other ClarityClaw files (soul_kernel.metta, soul_utils.metta, soul_memory.metta,
+docs/decisions/) are new files with no counterpart in Patrick's repo. They merge
+cleanly every time.
+
+---
 *Last updated: March 2026 | Platform: Mac M4 24GB RAM*
