@@ -11,6 +11,12 @@ _server = None
 _port = None
 _nick = None
 
+# Flood protection: Libera.Chat allows ~5 messages per 10 seconds.
+# We use a token-bucket rate limiter to stay well under that.
+_MSG_INTERVAL = 2.0   # minimum seconds between PRIVMSG sends
+_last_send_time = 0.0
+_send_rate_lock = threading.Lock()
+
 def _send(cmd):
     with _sock_lock:
         if _sock:
@@ -18,6 +24,17 @@ def _send(cmd):
                 _sock.sendall((cmd + "\r\n").encode())
             except OSError:
                 pass  # connection lost, will be detected by recv loop
+
+def _send_privmsg(channel, text):
+    """Send a single PRIVMSG with rate limiting to avoid flood kicks."""
+    global _last_send_time
+    with _send_rate_lock:
+        now = time.time()
+        wait = _MSG_INTERVAL - (now - _last_send_time)
+        if wait > 0:
+            time.sleep(wait)
+        _send(f"PRIVMSG {channel} :{text}")
+        _last_send_time = time.time()
 
 def _set_last(msg):
     global _last_message
@@ -51,13 +68,13 @@ def _irc_loop(channel, server, port, nick):
         if not sock:
             print(f"[IRC] Retrying in {backoff}s...", flush=True)
             time.sleep(backoff)
-            backoff = min(backoff * 2, 60)
+            backoff = min(backoff * 2, 120)
             continue
 
         with _sock_lock:
             _sock = sock
-        backoff = 1  # reset on successful connection
 
+        connected_at = time.time()
         _buf = ""
         try:
             while _running:
@@ -91,13 +108,18 @@ def _irc_loop(channel, server, port, nick):
                         _send(f"JOIN {channel}")
                         print(f"[IRC] Registered and joined {channel}", flush=True)
 
+                    # Detect server-side kill/error messages
+                    elif len(parts) > 1 and parts[1] == "ERROR":
+                        reason = line.split(":", 2)[-1] if ":" in line else "unknown"
+                        print(f"[IRC] Server ERROR: {reason}", flush=True)
+
                     elif line.startswith(":") and " PRIVMSG " in line:
                         try:
                             prefix, trailing = line[1:].split(" PRIVMSG ", 1)
                             sender = prefix.split("!", 1)[0]
 
                             if " :" not in trailing:
-                                continue  # malformed, skip (was 'return' — killed thread!)
+                                continue  # malformed, skip
 
                             msg = trailing.split(" :", 1)[1]
                             _set_last(f"{sender}: {msg}")
@@ -112,6 +134,19 @@ def _irc_loop(channel, server, port, nick):
                 sock.close()
             except Exception:
                 pass
+
+        # Smart backoff: if the connection was short-lived (< 60s),
+        # the server is probably rejecting us — apply exponential backoff.
+        # If it lasted a long time, reset backoff (was a normal disconnect).
+        uptime = time.time() - connected_at
+        if uptime < 60:
+            backoff = min(backoff * 2, 120)
+            print(f"[IRC] Connection lasted only {uptime:.0f}s — backing off {backoff}s", flush=True)
+        else:
+            backoff = 1
+            print(f"[IRC] Connection lasted {uptime:.0f}s — reconnecting immediately", flush=True)
+
+        time.sleep(backoff)
 
     print("[IRC] Loop stopped.", flush=True)
 
@@ -137,26 +172,37 @@ def send_message(text):
     IRC has a hard 512-byte limit per raw message (RFC 2812). After accounting
     for 'PRIVMSG #channel :' prefix, sender mask, and CRLF, usable payload is
     roughly 400 chars. We split on newlines first, then chunk any line that
-    exceeds the limit.
+    exceeds the limit. Rate-limited to avoid Libera.Chat flood kicks.
+
+    Long responses are capped at 10 chunks (~4000 chars) to avoid flooding
+    the channel. If the response is longer, a truncation notice is appended.
     """
     if not _connected:
         return
-    max_len = 400  # conservative — leaves room for protocol overhead
+    max_len = 400   # conservative — leaves room for protocol overhead
+    max_chunks = 10  # cap to avoid flood kicks on very long responses
+
     # Split on literal \n sequences (MeTTa sends \\n as newline marker)
     parts = text.replace("\\n", "\n").split("\n")
+    chunks = []
     for part in parts:
         part = part.strip()
         if not part:
             continue
         # Chunk long lines
         while len(part) > max_len:
-            # Try to break at a space
             split_at = part.rfind(" ", 0, max_len)
             if split_at == -1:
                 split_at = max_len  # no space found, hard break
-            _send(f"PRIVMSG {_channel} :{part[:split_at]}")
+            chunks.append(part[:split_at])
             part = part[split_at:].lstrip()
-            time.sleep(0.3)  # small delay to avoid flood protection
         if part:
-            _send(f"PRIVMSG {_channel} :{part}")
-            time.sleep(0.3)
+            chunks.append(part)
+
+    # Enforce chunk cap
+    if len(chunks) > max_chunks:
+        chunks = chunks[:max_chunks]
+        chunks.append("[Response truncated — too long for IRC. Ask me to continue.]")
+
+    for chunk in chunks:
+        _send_privmsg(_channel, chunk)
