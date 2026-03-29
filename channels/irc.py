@@ -11,9 +11,9 @@ _server = None
 _port = None
 _nick = None
 
-# Flood protection: Libera.Chat allows ~5 messages per 10 seconds.
-# We use a token-bucket rate limiter to stay well under that.
-_MSG_INTERVAL = 2.0   # minimum seconds between PRIVMSG sends
+# Flood protection: Libera.Chat allows ~5 messages per 2 seconds.
+# 0.8s between messages = ~2.5 msg/s, well within limits.
+_MSG_INTERVAL = 0.8
 _last_send_time = 0.0
 _send_rate_lock = threading.Lock()
 
@@ -180,7 +180,7 @@ def send_message(text):
     if not _connected:
         return
     max_len = 400   # conservative — leaves room for protocol overhead
-    max_chunks = 10  # cap to avoid flood kicks on very long responses
+    max_chunks = 20  # safety cap — ~8000 chars at 0.8s each = 16s max send time
 
     # Split on literal \n sequences (MeTTa sends \\n as newline marker)
     parts = text.replace("\\n", "\n").split("\n")
