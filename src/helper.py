@@ -8,3 +8,9 @@ def balance_parentheses(s):
         right += 1
     core = s[left:len(s) - right if right else len(s)].strip()
     return f"(({core}))"
+
+def extract_after(text, marker):
+    """Extract everything after marker in text. Returns 'NONE' if marker not found."""
+    if marker in text:
+        return text.split(marker, 1)[1].strip()
+    return "NONE"
