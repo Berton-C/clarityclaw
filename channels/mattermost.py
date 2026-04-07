@@ -119,11 +119,26 @@ def stop_mattermost():
     _running = False
 
 def send_message(text):
+    """Post a message to the configured Mattermost channel.
+    The websocket and the REST API are independent -- we send via HTTP POST
+    regardless of websocket state, so a mid-reconnect blip doesn't drop replies.
+    All failures are logged loudly so they never get swallowed into PeTTa as a
+    generic skill failure.
+    """
     text = text.replace("\\n", "\n")
-    if not _connected:
+    if not MM_URL or not CHANNEL_ID or not BOT_TOKEN:
+        print("[Mattermost] send_message: NOT CONFIGURED -- dropping message")
         return
-    requests.post(
-        f"{MM_URL}/api/v4/posts",
-        headers=_headers,
-        json={"channel_id": CHANNEL_ID, "message": text}
-    )
+    try:
+        r = requests.post(
+            f"{MM_URL}/api/v4/posts",
+            headers=_headers,
+            json={"channel_id": CHANNEL_ID, "message": text},
+            timeout=10,
+        )
+        if r.status_code >= 300:
+            print(f"[Mattermost] send_message FAILED: HTTP {r.status_code} -- {r.text[:300]}")
+        else:
+            print(f"[Mattermost] sent ({len(text)} chars)")
+    except Exception as e:
+        print(f"[Mattermost] send_message EXCEPTION: {type(e).__name__}: {e}")
