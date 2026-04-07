@@ -21,10 +21,22 @@ def _get_bot_user_id():
     )
     return r.json()["id"]
 
-def _set_last(msg):
+def _set_last(msg, post_id=""):
+    """Store latest user message.
+
+    NOTE: loop.metta detects new messages via string-equality against the
+    previous poll. If a user sends the same text twice in a row, the bare
+    text would compare equal and Claire would never wake up for the second
+    send. We tag every stored message with the Mattermost post ID so that
+    even byte-identical text from two different posts produces two different
+    strings. Claire treats the [#xxxx] tag as an opaque identifier.
+    """
     global _last_message
     with _msg_lock:
-        _last_message = msg
+        if post_id:
+            _last_message = f"[#{post_id[:8]}] {msg}"
+        else:
+            _last_message = msg
 
 def getLastMessage():
     with _msg_lock:
@@ -74,7 +86,8 @@ def _ws_loop():
                     post = json.loads(event["data"]["post"])
                     if post["channel_id"] == CHANNEL_ID and post["user_id"] != BOT_USER_ID:
                         name = _get_display_name(post["user_id"])
-                        _set_last(f"{name}: {post['message']}")
+                        _set_last(f"{name}: {post['message']}", post.get("id", ""))
+                        print(f"[Mattermost] received post #{post.get('id','')[:8]} from {name} ({len(post['message'])} chars)")
 
         except Exception as e:
             _connected = False

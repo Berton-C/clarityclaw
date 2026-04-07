@@ -124,6 +124,10 @@ services:
       - ./petta_shared_files:/app/PeTTa/shared_files
       # Fixed IRC client with auto-reconnect (overrides built-in irc.py)
       - ./channels/irc.py:/app/PeTTa/repos/mettaclaw/channels/irc.py:ro
+      # Mattermost client: bind-mounted so edits take effect on restart, no rebuild required
+      - ./channels/mattermost.py:/app/PeTTa/repos/mettaclaw/channels/mattermost.py:ro
+      # Channel dispatch layer: bind-mounted for the same reason
+      - ./src/channels.metta:/app/PeTTa/repos/mettaclaw/src/channels.metta:ro
       # (Phase 2) Uncomment to mount soul kernel for live edits:
       # - ./src/soul_kernel.metta:/app/PeTTa/repos/mettaclaw/src/soul_kernel.metta:ro
     environment:
