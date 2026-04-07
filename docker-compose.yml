@@ -72,11 +72,15 @@ services:
       - MM_SERVICESETTINGS_SITEURL=http://localhost:8065
       # Allow internal connections (mettaclaw -> mattermost API)
       - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=mettaclaw,localhost,127.0.0.1
+    # NOTE: the minimal Mattermost image has neither `wget` nor `sh` on PATH,
+    # so CMD-form wget and CMD-SHELL healthchecks both fail with "executable
+    # not found" even though Mattermost itself is serving traffic fine. Use
+    # the mattermost binary directly (exec form, no shell needed).
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8065/api/v4/system/ping"]
-      interval: 20s
+      test: ["CMD", "/mattermost/bin/mattermost", "version"]
+      interval: 30s
       timeout: 10s
-      retries: 10
+      retries: 5
       start_period: 90s
     networks:
       - clarityclaw_net
