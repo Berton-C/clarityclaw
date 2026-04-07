@@ -92,11 +92,10 @@ services:
       dockerfile: Dockerfile
     platform: linux/amd64
     container_name: clarityclaw_agent
-    # depends_on not needed when COMMCHANNEL=irc (no Mattermost required)
-    # Uncomment if switching back to Mattermost:
-    # depends_on:
-    #   mattermost:
-    #     condition: service_started
+    # Mattermost must be up before ClarityClaw tries to connect to it
+    depends_on:
+      mattermost:
+        condition: service_started
     restart: unless-stopped
     volumes:
       # Persistent memory: soul notes, conversation history
@@ -109,6 +108,10 @@ services:
       - ./memory/prompt.txt:/app/PeTTa/repos/mettaclaw/memory/prompt.txt:ro
       # Shared files: drop PDFs and docs here on your Mac, ClarityClaw can read them
       - ./shared_files:/app/PeTTa/repos/mettaclaw/shared_files
+      # NACE sandbox: ClarityClaw's NACE learning environment (persists across rebuilds)
+      - ./sandbox:/app/PeTTa/repos/mettaclaw/sandbox
+      # PeTTa-level shared files: ClarityClaw writes some files here (outside repos/)
+      - ./petta_shared_files:/app/PeTTa/shared_files
       # Fixed IRC client with auto-reconnect (overrides built-in irc.py)
       - ./channels/irc.py:/app/PeTTa/repos/mettaclaw/channels/irc.py:ro
       # (Phase 2) Uncomment to mount soul kernel for live edits:

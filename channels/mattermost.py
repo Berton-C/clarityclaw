@@ -1,4 +1,4 @@
-import threading, json
+import os, threading, json
 import requests, websocket
 
 _running = False
@@ -14,7 +14,7 @@ CHANNEL_ID = "8fjrmabjx7gupy7e5kjznpt5qh" #NOT AN ID JUST NAME: "mettaclaw"x
 BOT_TOKEN = ""
 
 def _get_bot_user_id():
-    global headers
+    global _headers
     r = requests.get(
         f"{MM_URL}/api/v4/users/me",
         headers=_headers
@@ -68,10 +68,21 @@ def _ws_loop():
     _connected = False
 
 def start_mattermost(MM_URL_, CHANNEL_ID_, BOT_TOKEN_):
+    """Start Mattermost websocket listener.
+
+    Any empty argument falls back to the corresponding environment variable
+    (MM_URL, MM_CHANNEL_ID, MM_BOT_TOKEN). This lets channels.metta keep the
+    three values empty so secrets never have to be committed to the repo.
+    """
     global _running, MM_URL, CHANNEL_ID, BOT_TOKEN, _headers
-    MM_URL = MM_URL_
-    CHANNEL_ID = CHANNEL_ID_
-    BOT_TOKEN = BOT_TOKEN_
+    MM_URL     = MM_URL_     or os.environ.get("MM_URL",        "")
+    CHANNEL_ID = CHANNEL_ID_ or os.environ.get("MM_CHANNEL_ID", "")
+    BOT_TOKEN  = BOT_TOKEN_  or os.environ.get("MM_BOT_TOKEN",  "")
+    if not MM_URL or not CHANNEL_ID or not BOT_TOKEN:
+        print("[Mattermost] FATAL: MM_URL, MM_CHANNEL_ID, and MM_BOT_TOKEN "
+              "must be set (via channels.metta or environment variables).")
+        return None
+    print(f"[Mattermost] Connecting to {MM_URL} channel {CHANNEL_ID[:8]}...")
     _headers = {"Authorization": f"Bearer {BOT_TOKEN}"}
     _running = True
     t = threading.Thread(target=_ws_loop, daemon=True)
