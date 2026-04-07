@@ -72,6 +72,10 @@ services:
       - MM_SERVICESETTINGS_SITEURL=http://localhost:8065
       # Allow internal connections (mettaclaw -> mattermost API)
       - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=mettaclaw,localhost,127.0.0.1
+      # Allow websocket upgrades from the mettaclaw container (Origin: http://mattermost:8065)
+      # and from the host browser. "*" is fine for a LAN-only deployment.
+      - MM_SERVICESETTINGS_ALLOWCORSFROM=*
+      - MM_SERVICESETTINGS_CORSALLOWCREDENTIALS=true
     # NOTE: the minimal Mattermost image has neither `wget` nor `sh` on PATH,
     # so CMD-form wget and CMD-SHELL healthchecks both fail with "executable
     # not found" even though Mattermost itself is serving traffic fine. Use
