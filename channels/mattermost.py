@@ -1,4 +1,4 @@
-import os, threading, json
+import os, threading, json, time
 import requests, websocket
 
 _running = False
@@ -44,27 +44,52 @@ def _get_display_name(user_id):
     return u["username"]
 
 def _ws_loop():
+    """Connect (and reconnect) to Mattermost websocket with exponential backoff.
+
+    Outer loop: keep trying to (re)establish a connection while _running.
+    Inner loop: read events until the connection drops.
+    Backoff doubles after each failed attempt, capped at 60s.
+    """
     global _ws, _connected, BOT_USER_ID
 
     ws_url = MM_URL.replace("https", "wss").replace("http", "ws") + "/api/v4/websocket"
-    ws = websocket.WebSocket()
-    ws.connect(ws_url, header=[f"Authorization: Bearer {BOT_TOKEN}"])
-    BOT_USER_ID = _get_bot_user_id()
-    _ws = ws
-    _connected = True
+    backoff = 2
 
     while _running:
+        ws = None
         try:
-            event = json.loads(ws.recv())
-            if event.get("event") == "posted":
-                post = json.loads(event["data"]["post"])
-                if post["channel_id"] == CHANNEL_ID and post["user_id"] != BOT_USER_ID:
-                    name = _get_display_name(post["user_id"])
-                    _set_last(f"{name}: {post['message']}")
-        except Exception:
-            break
+            print(f"[Mattermost] Connecting to {ws_url}...")
+            ws = websocket.WebSocket()
+            ws.connect(ws_url, header=[f"Authorization: Bearer {BOT_TOKEN}"])
+            BOT_USER_ID = _get_bot_user_id()
+            _ws = ws
+            _connected = True
+            print(f"[Mattermost] Connected as bot user {BOT_USER_ID[:8]}...")
+            backoff = 2  # reset backoff after a successful connection
 
-    ws.close()
+            # Inner loop: receive events until something breaks
+            while _running:
+                event = json.loads(ws.recv())
+                if event.get("event") == "posted":
+                    post = json.loads(event["data"]["post"])
+                    if post["channel_id"] == CHANNEL_ID and post["user_id"] != BOT_USER_ID:
+                        name = _get_display_name(post["user_id"])
+                        _set_last(f"{name}: {post['message']}")
+
+        except Exception as e:
+            _connected = False
+            print(f"[Mattermost] Connection lost: {type(e).__name__}: {e} -- "
+                  f"reconnecting in {backoff}s")
+            try:
+                if ws is not None:
+                    ws.close()
+            except Exception:
+                pass
+            if not _running:
+                break
+            time.sleep(backoff)
+            backoff = min(backoff * 2, 60)  # exponential, capped at 60s
+
     _connected = False
 
 def start_mattermost(MM_URL_, CHANNEL_ID_, BOT_TOKEN_):

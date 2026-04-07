@@ -92,10 +92,12 @@ services:
       dockerfile: Dockerfile
     platform: linux/amd64
     container_name: clarityclaw_agent
-    # Mattermost must be up before ClarityClaw tries to connect to it
+    # Mattermost must be HEALTHY (not just started) before ClarityClaw tries
+    # to connect. Mattermost takes 60-90s on first boot to start accepting
+    # API connections; service_started would let ClarityClaw race and fail.
     depends_on:
       mattermost:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     volumes:
       # Persistent memory: soul notes, conversation history
