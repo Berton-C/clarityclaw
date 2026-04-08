@@ -2,6 +2,8 @@
 !(import! &self (library lib_llm))
 !(import! &self (library lib_vector))
 !(import! &self (library lib_combinatorics))
+!(import! &self (library mettaclaw lib_nal))
+!(import! &self (library mettaclaw lib_llm_asicloud.py))
 !(import! &self (library mettaclaw ./src/helper.py))
 !(import! &self (library mettaclaw ./channels/irc.py))
 !(import! &self (library mettaclaw ./channels/mattermost.py))
@@ -10,9 +12,9 @@
 !(import! &self (library mettaclaw ./src/channels))
 !(import! &self (library mettaclaw ./src/skills))
 !(import! &self (library mettaclaw ./src/memory))
-!(import! &self (library mettaclaw ./soul/soul_kernel))    ;; ClarityClaw soul atoms + accessors
-!(import! &self (library mettaclaw ./soul/soul_utils))     ;; ClarityClaw soul utility functions
-!(import! &self (library mettaclaw ./soul/soul_memory))    ;; ClarityClaw soul seeding + sentinel
+!(import! &self (library mettaclaw ./soul/soul_kernel))
+!(import! &self (library mettaclaw ./soul/soul_utils))
+!(import! &self (library mettaclaw ./soul/soul_memory))
 !(import! &self (library mettaclaw ./src/channels))
 !(import! &self (library mettaclaw ./src/context))
 !(import! &self (library mettaclaw ./src/loop))
