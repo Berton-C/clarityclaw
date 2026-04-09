@@ -48,6 +48,21 @@ def extract_after(text, marker):
         return text.split(marker, 1)[1].strip()
     return "NONE"
 
+def file_exists(path):
+    """Check if a file exists. Returns True/False for MeTTa."""
+    import os
+    return os.path.exists(path)
+
+def touch_file(path):
+    """Create an empty file at path if it does not exist."""
+    import os
+    d = os.path.dirname(path)
+    if d:
+        os.makedirs(d, exist_ok=True)
+    with open(path, 'a'):
+        pass
+    return "ok"
+
 def balance_parentheses(s):
     s=s.replace("_quote_", '"')
     s = s.strip()

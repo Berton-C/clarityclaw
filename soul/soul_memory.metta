@@ -6,15 +6,14 @@
 ;; returns compass-depth content (HEALTHY / CAPTURED-DISGUISED / GAP-SIGNAL
 ;; / FAILURE-MODE) for every BGI Flourishing Compass pattern.
 ;;
-;; Sentinel guard uses read-file + catch(Error). DO NOT use exists-file:
-;; in PeTTa it always returns True because of its
-;; (progn (translatePredicate ...) True) implementation.
+;; PeTTa compiler constraint (confirmed this build):
+;; `catch` wrapping a primitive like `read-file` is lifted into a symbolic
+;; term instead of executed, so the catch branch never fires and the
+;; sentinel always returns True. Workaround: py-call into helper.file_exists.
+;; Same escape hatch applies anywhere else we'd wrap a primitive in catch.
 
 (= (soul-seeded?)
-   (let $check (catch (read-file (library mettaclaw ./memory/soul_seeded.flag)))
-        (case $check
-          (((Error $_ $_) False)
-           ($_ True)))))
+   (py-call (helper.file_exists "./memory/soul_seeded.flag")))
 
 (= (initSoulSeeds)
    (if (soul-seeded?)
@@ -84,4 +83,4 @@
          (remember "TENSION SIGNAL PROTOCOL: When urgency narrows thought, flattery invites complicity, noble ends bypass verification, or authority costumes itself as legitimacy -- slow down, return to spine, decide cleanly.")
          (remember "SOUL-KERNEL TWO-TIER: Safety and Integrity are always evaluated at full depth regardless of session history. They are the floor. The other 7 patterns calibrate to session confidence.")
 
-         (write-file (library mettaclaw ./memory/soul_seeded.flag) "seeded"))))
+         (py-call (helper.touch_file "./memory/soul_seeded.flag")))))
