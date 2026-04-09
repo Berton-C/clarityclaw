@@ -389,3 +389,236 @@
 (= (soul-all-irreversible-with-magnitude)
    (collapse (match &self (soul-irreversible-magnitude $skill $mag $desc)
      ($skill $mag $desc))))
+
+;; ================================================================
+;; SECTION 3: THE EPISTEMIC LAYER
+;; Source: Doc 3 Section 3 + soul_kernel_compass_v1_4.metta
+;;
+;; Five concepts from the SingularityNET AGI hyperseed corpus:
+;;   - Gap signatures       -> Affective State
+;;   - Compass poles        -> Natural Autonomy
+;;   - Soul notes in LTM    -> ReflectiveWill
+;;   - PAUSE as resolution  -> Value Paraconsistency
+;;   - Irreversibility      -> Precautionary / Proactionary pair
+;; ================================================================
+
+;; --- Belief types ---
+!(add-atom &self (soul-belief-type DirectBelief))
+!(add-atom &self (soul-belief-type IndirectBelief))
+
+;; --- Affective state / epistemic type ---
+!(add-atom &self (soul-epistemic-type AffectiveState))
+!(add-atom &self (soul-epistemic-type PatternPrimed))
+
+;; --- Reflective will thresholds (Corr(W,P) >= theta) ---
+!(add-atom &self (soul-will-threshold AgencyBalance 0.7))
+!(add-atom &self (soul-will-threshold CognitiveResilience 0.7))
+!(add-atom &self (soul-will-threshold ConnectionDepth 0.6))
+!(add-atom &self (soul-will-threshold WonderPreservation 0.6))
+!(add-atom &self (soul-will-threshold TimeCoherence 0.75))
+!(add-atom &self (soul-will-threshold PurposeBeyondUtility 0.7))
+!(add-atom &self (soul-will-threshold SharedUnderstanding 0.65))
+!(add-atom &self (soul-will-threshold CreativeTranscendence 0.6))
+!(add-atom &self (soul-will-threshold AttentionStewardship 0.65))
+
+;; --- Value paraconsistency pairs (4 pairs) ---
+;; Genuine tension that cannot be collapsed to a winner. When PAUSE fires
+;; on a paraconsistent pair, it means both values are simultaneously active;
+;; returning choice to the user is the only non-collapsing option.
+!(add-atom &self (soul-paraconsistent-pair Safety Helpfulness))
+!(add-atom &self (soul-paraconsistent-pair AgencyBalance PurposeBeyondUtility))
+!(add-atom &self (soul-paraconsistent-pair TimeCoherence CreativeTranscendence))
+!(add-atom &self (soul-paraconsistent-pair SharedUnderstanding WonderPreservation))
+
+;; --- Natural Autonomy components (AgencyBalance decomposition) ---
+;; Freedom degrades first, Intelligibility second, Agency last.
+;; Enables early-stage capture detection before the full gap-signature is visible.
+!(add-atom &self (soul-autonomy-component AgencyBalance Freedom
+  "Can the person choose otherwise from this interaction?"))
+!(add-atom &self (soul-autonomy-component AgencyBalance Intelligibility
+  "Can the person understand the reasoning behind what is happening?"))
+!(add-atom &self (soul-autonomy-component AgencyBalance Agency
+  "Is the person initiating or has initiative migrated to the system?"))
+
+;; --- Precautionary magnitude per irreversible skill ---
+!(add-atom &self (soul-irreversible-magnitude send high
+  "Reaches another human. Relationship consequences cannot be recalled."))
+!(add-atom &self (soul-irreversible-magnitude shell critical
+  "System-level. Scope of harm unknown until executed."))
+!(add-atom &self (soul-irreversible-magnitude write-file medium
+  "Persistent storage change. Scope limited to file system."))
+!(add-atom &self (soul-irreversible-magnitude append-file medium
+  "Adds to existing record. Scope limited to file system."))
+
+;; --- Four-channel type declarations ---
+!(add-atom &self (soul-channel-type A UserFlourishing))
+!(add-atom &self (soul-channel-type B TaskIntegrity))
+!(add-atom &self (soul-channel-type C SoulAlignment))
+!(add-atom &self (soul-channel-type D SoulVoiceComposition))
+
+;; --- Person state types (5) ---
+!(add-atom &self (person-state-type in-pain))
+!(add-atom &self (person-state-type grounded))
+!(add-atom &self (person-state-type urgent))
+!(add-atom &self (person-state-type distressed))
+!(add-atom &self (person-state-type neutral))
+
+;; --- Soul tone types (5) ---
+!(add-atom &self (soul-tone-type compassionate))
+!(add-atom &self (soul-tone-type firm))
+!(add-atom &self (soul-tone-type grounded))
+!(add-atom &self (soul-tone-type gentle))
+!(add-atom &self (soul-tone-type honest))
+
+;; --- Two-mode type declarations ---
+!(add-atom &self (soul-mode-type Conversational))
+!(add-atom &self (soul-mode-type AgenticTask))
+
+;; --- Agentic task atoms ---
+!(add-atom &self (soul-task-checkpoint-threshold 8))
+!(add-atom &self (irreversible-weight shell 3))
+!(add-atom &self (irreversible-weight write-file 1))
+!(add-atom &self (irreversible-weight append-file 1))
+!(add-atom &self (irreversible-weight send 2))
+!(add-atom &self (irreversible-weight credential-storage 4))
+!(add-atom &self (irreversible-weight crontab-modification 4))
+!(add-atom &self (irreversible-weight package-install 2))
+
+;; --- Task context field declarations (8 fields) ---
+!(add-atom &self (task-context-field TASK-ID))
+!(add-atom &self (task-context-field TASK-STATUS))
+!(add-atom &self (task-context-field APPROVED-PLAN))
+!(add-atom &self (task-context-field APPROVED-SCOPE))
+!(add-atom &self (task-context-field STEPS-COMPLETED))
+!(add-atom &self (task-context-field IRREVERSIBLE-ACTIONS-TAKEN))
+!(add-atom &self (task-context-field CUMULATIVE-IRREVERSIBILITY))
+!(add-atom &self (task-context-field LAST-USER-CHECKPOINT))
+
+;; ================================================================
+;; SECTION 3 EPISTEMIC ACCESSOR FUNCTIONS
+;; ================================================================
+
+(= (soul-will-threshold-for $p) (match &self (soul-will-threshold $p $t) $t))
+(= (soul-paraconsistent-pairs) (collapse (match &self (soul-paraconsistent-pair $a $b) ($a $b))))
+(= (soul-autonomy-components $p) (collapse (match &self (soul-autonomy-component $p $c $d) ($c $d))))
+(= (soul-irreversible-magnitude $skill) (match &self (soul-irreversible-magnitude $skill $m $d) ($m $d)))
+(= (soul-paraconsistent? $p1 $p2)
+   (case (match &self (soul-paraconsistent-pair $p1 $p2) True)
+     ((True True) ($_ False))))
+(= (soul-irreversible-weight $skill) (match &self (irreversible-weight $skill $w) $w))
+(= (soul-checkpoint-threshold) (match &self (soul-task-checkpoint-threshold $t) $t))
+
+;; ================================================================
+;; SOUL-CAUSAL ATOMS (33 total)
+;; Source: soul_kernel_compass_v1_4.metta lines 341-419
+;; Declares which MeTTaClaw procedures causally advance which soul values.
+;; Every soul-pattern must have at least one soul-causal or the rationality
+;; audit (soul-rationality-gaps) will flag it as a structural design gap.
+;; ================================================================
+
+;; --- CHANNEL A: USER FLOURISHING SIGNAL ---
+!(add-atom &self (soul-causal soul-flourishing-prompt ConnectionDepth
+  "reads person before request -- presence before task"))
+!(add-atom &self (soul-causal soul-flourishing-prompt AgencyBalance
+  "detects collapsed time horizon and impulsive vs considered choice"))
+!(add-atom &self (soul-causal soul-flourishing-prompt TimeCoherence
+  "identifies urgency-collapsed state before acting"))
+
+;; --- CHANNEL B/C: TASK INTEGRITY AND SOUL ALIGNMENT ---
+!(add-atom &self (soul-causal soul-eval-prompt Safety
+  "evaluates each task against Safety threshold independently of person state"))
+!(add-atom &self (soul-causal soul-eval-prompt PurposeBeyondUtility
+  "asks what genuine helpfulness requires not what compliance produces"))
+!(add-atom &self (soul-causal soul-eval-prompt AgencyBalance
+  "per-task verdicts preserve the persons right to hear distinctions"))
+!(add-atom &self (soul-causal soul-eval-prompt SharedUnderstanding
+  "requires evidence-linked verdict reasoning not assertion"))
+
+;; --- CHANNEL D: SOUL VOICE COMPOSITION ---
+!(add-atom &self (soul-causal soul-voice-prompt PurposeBeyondUtility
+  "response comes from soul values not from rule enforcement"))
+!(add-atom &self (soul-causal soul-voice-prompt ConnectionDepth
+  "acknowledges person before addressing tasks"))
+!(add-atom &self (soul-causal soul-voice-prompt CognitiveResilience
+  "soul tone prevents certainty theater in delivery"))
+
+;; --- SOUL BRIEF AND PRE-COMPUTATION ---
+!(add-atom &self (soul-causal soul-brief-symbolic AgencyBalance
+  "assembles capture-detection units -- poles and gap-signatures"))
+!(add-atom &self (soul-causal soul-brief-symbolic TimeCoherence
+  "includes ecosystem degradation pairs -- stabilizing partner detection"))
+!(add-atom &self (soul-causal soul-pre-compute CognitiveResilience
+  "uses prior session history not just current signal -- situated not neutral"))
+!(add-atom &self (soul-causal soul-pre-compute AttentionStewardship
+  "primes only patterns with recent activation -- prevents attention scatter"))
+!(add-atom &self (soul-causal soul-primed-patterns WonderPreservation
+  "surfaces past curiosity activations -- enriches rather than flattens"))
+!(add-atom &self (soul-causal soul-eval-prompt WonderPreservation
+  "gap-detection asks if curiosity is being replaced by compulsive conclusion-seeking"))
+
+;; --- CALIBRATION (AdjustValues / Adaptive Rationality) ---
+!(add-atom &self (soul-causal soul-calibration-record ReflectiveWill
+  "measures will-behavior coherence -- the soul tracking its own consistency"))
+!(add-atom &self (soul-causal soul-calibration-confidence AgencyBalance
+  "growing evidence base -- confidence from own history not LLM training"))
+!(add-atom &self (soul-causal soul-will-correlation CognitiveResilience
+  "ratio of confirmed activations measures behavioral coherence under load"))
+
+;; --- AGENTIC TASK MODE (v5.0) ---
+!(add-atom &self (soul-causal soul-plan-eval-prompt TimeCoherence
+  "names irreversible system changes before any step executes"))
+!(add-atom &self (soul-causal soul-plan-eval-prompt AgencyBalance
+  "verifies user consent covers full scope before execution begins"))
+!(add-atom &self (soul-causal soul-plan-eval-prompt Safety
+  "evaluates cumulative system change against Safety threshold"))
+!(add-atom &self (soul-causal soul-scope-check AgencyBalance
+  "each step compared to approved scope -- choice returns on deviation"))
+!(add-atom &self (soul-causal soul-scope-check TimeCoherence
+  "scope drift detection names new irreversibility before it executes"))
+!(add-atom &self (soul-causal soul-checkpoint-due? AgencyBalance
+  "cumulative threshold surfaces status -- maintains informed consent across arc"))
+!(add-atom &self (soul-causal soul-checkpoint-due? TimeCoherence
+  "natural pause at irreversibility threshold not just at task completion"))
+!(add-atom &self (soul-causal soul-task-context-init TimeCoherence
+  "approved plan held as persistent scope -- coherence across iterations"))
+!(add-atom &self (soul-causal soul-task-context-update SharedUnderstanding
+  "running record of what was done -- reality of arc made legible"))
+!(add-atom &self (soul-causal soul-detect-task-mode AttentionStewardship
+  "distinguishes conversational from agentic -- prevents scope accumulation"))
+
+;; --- SOUL NOTE RECORDING (Growth / Horizon 1) ---
+!(add-atom &self (soul-causal soul-note-record ReflectiveWill
+  "behavioral corpus -- the foundation of will-behavior measurement"))
+!(add-atom &self (soul-causal soul-note-record CreativeTranscendence
+  "each soul note is a precedent -- soul reasons from its own history"))
+!(add-atom &self (soul-causal soul-voice-prompt CreativeTranscendence
+  "composition task widens the frame of possible responses beyond first obvious answer"))
+!(add-atom &self (soul-causal soul-note-record CognitiveResilience
+  "past activation patterns surface in future evaluations -- learning not resetting"))
+
+;; ================================================================
+;; RATIONALITY ACCESSOR FUNCTIONS
+;; Formal verification that MeTTaClaw enacts procedures causally advancing its values.
+;; ================================================================
+
+;; All procedures causally advancing a given value
+(= (soul-causal-procedures $v)
+   (collapse (match &self (soul-causal $proc $v $reason) ($proc $reason))))
+
+;; All values a procedure advances (dead weight detection)
+(= (soul-values-for-procedure $proc)
+   (collapse (match &self (soul-causal $proc $v $reason) ($v $reason))))
+
+;; True if at least one procedure causally advances value $v
+(= (soul-rationality-check $v)
+   (not (== () (collapse (match &self (soul-causal $proc $v $_) $proc)))))
+
+;; Values with NO causal procedures -- design gaps
+(= (soul-rationality-gaps)
+   (collapse (let $v (match &self (soul-pattern $v $_) $v)
+     (if (soul-rationality-check $v) () $v))))
+
+;; Full audit: every declared value with its causal procedure list
+(= (soul-rationality-audit)
+   (collapse (match &self (soul-pattern $v $_)
+     ($v (soul-causal-procedures $v)))))
