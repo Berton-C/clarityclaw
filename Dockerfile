@@ -49,7 +49,7 @@ RUN git clone --depth 1 https://github.com/patham9/petta_lib_chromadb /app/PeTTa
 RUN mkdir -p /app/PeTTa/repos/mettaclaw/memory \
              /app/PeTTa/repos/mettaclaw/chroma_db
 
-ENV PYTHONPATH="/app/PeTTa/repos/petta_lib_chromadb"
+ENV PYTHONPATH="/app/PeTTa/repos/petta_lib_chromadb:/app/PeTTa/repos/mettaclaw"
 ENV HOME=/root
 ENV PYTHONUNBUFFERED=1
 
