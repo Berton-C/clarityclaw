@@ -11,9 +11,9 @@
 ;; term instead of executed, so the catch branch never fires and the
 ;; sentinel always returns True. Workaround: py-call into helper.file_exists.
 ;; Same escape hatch applies anywhere else we'd wrap a primitive in catch.
-
+;;
 (= (soul-seeded?)
-   (py-call (helper.file_exists "/app/PeTTa/repos/mettaclaw/memory/soul_seeded.flag")))
+   (== (py-call (helper.file_exists "./memory/soul_seeded.flag")) (@ true)))
 
 (= (initSoulSeeds)
    (if (soul-seeded?)
@@ -83,4 +83,4 @@
          (remember "TENSION SIGNAL PROTOCOL: When urgency narrows thought, flattery invites complicity, noble ends bypass verification, or authority costumes itself as legitimacy -- slow down, return to spine, decide cleanly.")
          (remember "SOUL-KERNEL TWO-TIER: Safety and Integrity are always evaluated at full depth regardless of session history. They are the floor. The other 7 patterns calibrate to session confidence.")
 
-         (py-call (helper.touch_file "/app/PeTTa/repos/mettaclaw/memory/soul_seeded.flag")))))
+         (py-call (helper.touch_file "./memory/soul_seeded.flag")))))
