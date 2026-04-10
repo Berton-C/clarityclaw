@@ -53,6 +53,16 @@ def file_exists(path):
     import os
     return os.path.exists(path)
 
+def file_exists_int(path):
+    """Check if a file exists. Returns 1/0 integer."""
+    import os
+    return 1 if os.path.exists(path) else 0
+
+def file_exists_str(path):
+    """Check if a file exists. Returns string 'true'/'false'."""
+    import os
+    return "true" if os.path.exists(path) else "false"
+
 def touch_file(path):
     """Create an empty file at path if it does not exist."""
     import os

@@ -9,11 +9,17 @@
 ;; PeTTa compiler constraint (confirmed this build):
 ;; `catch` wrapping a primitive like `read-file` is lifted into a symbolic
 ;; term instead of executed, so the catch branch never fires and the
-;; sentinel always returns True. Workaround: py-call into helper.file_exists.
+;; sentinel always returns True. Workaround: py-call into helper.file_exists_int.
 ;; Same escape hatch applies anywhere else we'd wrap a primitive in catch.
 ;;
+;; Second constraint (confirmed via diagnostic):
+;; py-call wraps Python booleans in (@ ...) which neither if nor ==
+;; can match.  Python *integers* pass through unwrapped, so
+;; file_exists_int returns 1/0 and == yields a bare MeTTa true that
+;; if can branch on.
+
 (= (soul-seeded?)
-   (== (py-call (helper.file_exists "./memory/soul_seeded.flag")) (@ true)))
+   (== (py-call (helper.file_exists_int "./memory/soul_seeded.flag")) 1))
 
 (= (initSoulSeeds)
    (if (soul-seeded?)
