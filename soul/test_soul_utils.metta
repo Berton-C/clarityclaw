@@ -1,13 +1,19 @@
 ;; soul/test_soul_utils.metta
 ;; Stage 3 test harness: soul_utils.metta first half through soul-brief-symbolic.
 ;;
-;; Import chain: utils + memory first (progn compilation fix from Stage 2),
-;; then soul_kernel, then soul_utils.
+;; Uses full upstream import chain from lib_mettaclaw.metta so that py-str
+;; is available (it's provided by an upstream PeTTa library).
 ;;
 ;; Run: docker exec clarityclaw_agent sh /app/PeTTa/run.sh \
 ;;        /app/PeTTa/repos/mettaclaw/soul/test_soul_utils.metta default
 
-;; Full import chain (same order that worked for Stage 2)
+;; Upstream libraries (same order as lib_mettaclaw.metta)
+!(import! &self (library lib_patrick))
+!(import! &self (library lib_llm))
+!(import! &self (library lib_vector))
+!(import! &self (library lib_combinatorics))
+
+;; MeTTaClaw imports
 !(import! &self (library mettaclaw ./src/utils))
 !(import! &self (library mettaclaw ./src/memory))
 !(import! &self (library mettaclaw ./soul/soul_kernel))
