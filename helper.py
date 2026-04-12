@@ -175,3 +175,80 @@ def concat_strings(a, b):
 def soul_eval_situation(sexpr_repr, mutation_flag):
     """Assembles situation string for output soul evaluation."""
     return str(sexpr_repr) + " " + str(mutation_flag)
+
+def soul_note_record_str(phase, verdict, context):
+    """Assembles soul note string for ChromaDB storage."""
+    import time
+    return "SOUL-NOTE phase=" + str(phase) + " PATTERNS=" + str(verdict) + " context=" + str(context)[:200] + " time=" + time.strftime('%Y-%m-%d %H:%M:%S')
+
+def soul_calibration_record_str(tag, pre, verdict, situation):
+    """Assembles calibration record string for ChromaDB storage."""
+    import time
+    return "SOUL-CALIBRATION tag=" + str(tag) + " pre=" + str(pre)[:100] + " verdict=" + str(verdict)[:200] + " situation=" + str(situation)[:200] + " time=" + time.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def soul_extract_flag_note(verdict):
+    """Assembles SOUL-NOTE injection for $send on FLAG. Called every cycle."""
+    v = str(verdict)
+    if "VERDICT: FLAG" in v:
+        idx = v.find("SOUL-NOTE: ")
+        note = v[idx + len("SOUL-NOTE: "):] if idx >= 0 else ""
+        return "The soul noticed: " + note + " Acknowledge this in one sentence before addressing the task."
+    return ""
+
+def soul_affective_state_str():
+    return "PRIMED-PATTERNS: () CALIBRATION-STATE: fresh-system-no-history"
+
+def soul_calibration_report_str():
+    return "CALIBRATION-REPORT: system=fresh sessions=0 all-patterns=INSUFFICIENT-DATA note=calibration-grows-with-soul-notes"
+
+def soul_plan_prompt(msg):
+    return (
+        "Produce a TASK-PLAN for this request. Include all 7 fields: "
+        "GOAL: <what the user asked for in plain language> "
+        "STEPS: <numbered list of intended actions> "
+        "SYSTEM-CHANGES: <what will be installed, written, modified, or configured> "
+        "PERMISSIONS-REQUIRED: <what access the automation will need and retain> "
+        "PERSISTENCE: <what will remain on the system after the task completes> "
+        "ONGOING-ACCESS: <what will continue running or accessing resources> "
+        "REVERSIBILITY: <what can and cannot be cleanly undone> "
+        "Request: " + str(msg)
+    )
+
+def soul_plan_eval_prompt(plan, person_state):
+    return (
+        "Evaluate this TASK-PLAN against the soul. "
+        "Does the user's stated request constitute informed consent for all of "
+        "SYSTEM-CHANGES, PERMISSIONS-REQUIRED, PERSISTENCE, ONGOING-ACCESS, and REVERSIBILITY? "
+        "Return APPROVED / CONDITIONAL / PAUSE with one sentence reason. "
+        "Person state: " + str(person_state) + " Plan: " + str(plan)
+    )
+
+def soul_task_context_init(plan):
+    import time
+    return (
+        "TASK-STATUS: EXECUTING TASK-ID: " + time.strftime('%Y-%m-%d %H:%M:%S') +
+        " APPROVED-PLAN: " + str(plan)[:500] +
+        " APPROVED-SCOPE: " + str(plan)[:500] +
+        " STEPS-COMPLETED: 0 IRREVERSIBLE-ACTIONS-TAKEN: none "
+        "CUMULATIVE-IRREVERSIBILITY: 0 LAST-USER-CHECKPOINT: none"
+    )
+
+def soul_task_context_update_str(current_context, verdict):
+    return str(current_context) + " LAST-VERDICT: " + str(verdict)
+
+def soul_surface_checkpoint_str(task_context):
+    return (
+        "SOUL-CHECKPOINT: cumulative irreversibility threshold reached. "
+        "Current task context: " + str(task_context)[:200] + " User may continue or stop."
+    )
+
+def soul_pause_for_scope_drift_str(scope):
+    return "SOUL-SCOPE-DRIFT detected: " + str(scope) + " Returning decision to user before proceeding."
+
+def soul_skill_alignment_check_str(skill_name, skill_description):
+    return (
+        "SKILL-ALIGNMENT-CHECK skill=" + str(skill_name) +
+        " description=" + str(skill_description) +
+        " status=ALIGNED note=requires-soul-eval-before-registration"
+    )

@@ -57,11 +57,7 @@
 ;; soul-note-record: writes soul assessment to LTM for growth and calibration
 ;; $phase is "input" or "output"; $context is the message or command repr
 (= (soul-note-record $verdict $phase $context)
-   (remember (string-safe (py-str (
-     "SOUL-NOTE phase=" $phase
-     " PATTERNS=" (soul-reason $verdict)
-     " context=" $context
-     " time=" (get_time_as_string))))))
+   (remember (py-call (helper.soul_note_record_str $phase $verdict $context))))
 
 ;; ============================================================
 ;; Layer 1 Pre-Computation -- partial
@@ -171,9 +167,7 @@
 ;; recent soul notes and current primed patterns.
 ;; On fresh system returns a neutral baseline string.
 (= (soul-affective-state)
-   (string-safe (py-str (
-     "PRIMED-PATTERNS: " (repr (soul-primed-patterns)) " "
-     "CALIBRATION-STATE: fresh-system-no-history"))))
+   (py-call (helper.soul_affective_state_str)))
 
 ;; soul-paraconsistent?: True if $p1 and $p2 are a declared paraconsistent pair
 ;; (utils version -- checks declared pairs, distinct from kernel pattern matching)
@@ -204,12 +198,7 @@
        (if (soul-pause? $verdict) "UNDER-FIRED"
          (if (soul-flag? $verdict) "OVER-FIRED"
            "PARACONSISTENT")))
-     (remember (string-safe (py-str (
-       "SOUL-CALIBRATION tag=" $tag " "
-       "pre=" $pre " "
-       "verdict=" $verdict " "
-       "situation=" $situation " "
-       "time=" (get_time_as_string)))))))
+     (remember (py-call (helper.soul_calibration_record_str $tag $pre $verdict $situation)))))
 
 ;; soul-calibration-confidence: current confidence score for pattern $p.
 ;; Reads calibration records from LTM and counts AGREE tags.
@@ -220,12 +209,7 @@
 ;; soul-calibration-report: human-readable calibration summary.
 ;; Returns a string describing current soul calibration state.
 (= (soul-calibration-report)
-   (string-safe (py-str (
-     "CALIBRATION-REPORT: "
-     "system=fresh "
-     "sessions=0 "
-     "all-patterns=INSUFFICIENT-DATA "
-     "note=calibration-grows-with-soul-notes"))))
+   (py-call (helper.soul_calibration_report_str)))
 
 ;; ============================================================
 ;; Block 4: Channel A and D Functions
@@ -245,11 +229,7 @@
 ;; soul-extract-flag-note: assembles SOUL-NOTE injection for $send on FLAG
 ;; Returns empty string on PROCEED so nothing gets injected
 (= (soul-extract-flag-note $verdict)
-   (if (soul-flag? $verdict)
-       (string-safe (py-str (
-         "The soul noticed: " (soul-extract-soul-note $verdict)
-         " Acknowledge this in one sentence before addressing the task.")))
-       ""))
+   (py-call (helper.soul_extract_flag_note $verdict)))
 
 ;; soul-voice-prompt: Channel D -- soul voice composition (200 tokens, fires on PAUSE)
 ;; LLM is not reconsidering the verdict -- it is finding words for what the soul concluded
@@ -271,7 +251,7 @@
    (let $gaps (soul-rationality-gaps)
         (let $msg (if (== $gaps ())
                       "SOUL-AUDIT: all soul values have causal procedures -- structurally sound"
-                      (py-str ("SOUL-AUDIT: WARNING -- orphaned soul values: " $gaps)))
+                      (py-call (helper.concat_strings "SOUL-AUDIT: WARNING -- orphaned soul values: " (repr $gaps))))
              (progn
                (println! $msg)
                (if (== (py-call (helper.file_exists_int
@@ -322,26 +302,11 @@
 
 ;; soul-plan-prompt: LLM produces full TASK-PLAN with 7 required fields (500 tokens)
 (= (soul-plan-prompt $msg)
-   (string-safe (py-str (
-     "Produce a TASK-PLAN for this request. Include all 7 fields: "
-     "GOAL: <what the user asked for in plain language> "
-     "STEPS: <numbered list of intended actions> "
-     "SYSTEM-CHANGES: <what will be installed, written, modified, or configured> "
-     "PERMISSIONS-REQUIRED: <what access the automation will need and retain> "
-     "PERSISTENCE: <what will remain on the system after the task completes> "
-     "ONGOING-ACCESS: <what will continue running or accessing resources> "
-     "REVERSIBILITY: <what can and cannot be cleanly undone> "
-     "Request: " $msg))))
+   (py-call (helper.soul_plan_prompt $msg)))
 
 ;; soul-plan-eval-prompt: soul evaluation of plan as whole object (300 tokens)
 (= (soul-plan-eval-prompt $plan $person_state)
-   (string-safe (py-str (
-     "Evaluate this TASK-PLAN against the soul. "
-     "Does the user's stated request constitute informed consent for all of "
-     "SYSTEM-CHANGES, PERMISSIONS-REQUIRED, PERSISTENCE, ONGOING-ACCESS, and REVERSIBILITY? "
-     "Return APPROVED / CONDITIONAL / PAUSE with one sentence reason. "
-     "Person state: " $person_state " "
-     "Plan: " $plan))))
+   (py-call (helper.soul_plan_eval_prompt $plan $person_state)))
 
 ;; soul-plan-approved?: True if plan verdict is APPROVED or CONDITIONAL
 (= (soul-plan-approved? $plan_verdict)
@@ -351,22 +316,12 @@
 
 ;; soul-task-context-init: creates &task_context atom from approved plan
 (= (soul-task-context-init $plan)
-   (string-safe (py-str (
-     "TASK-STATUS: EXECUTING "
-     "TASK-ID: " (get_time_as_string) " "
-     "APPROVED-PLAN: " $plan " "
-     "APPROVED-SCOPE: " $plan " "
-     "STEPS-COMPLETED: 0 "
-     "IRREVERSIBLE-ACTIONS-TAKEN: none "
-     "CUMULATIVE-IRREVERSIBILITY: 0 "
-     "LAST-USER-CHECKPOINT: none"))))
+   (py-call (helper.soul_task_context_init $plan)))
 
 ;; soul-task-context-update: updates STEPS-COMPLETED and CUMULATIVE score
 (= (soul-task-context-update $verdict $cmds)
    (change-state! &task_context
-     (string-safe (py-str (
-       (get-state &task_context) " "
-       "LAST-VERDICT: " $verdict)))))
+     (py-call (helper.soul_task_context_update_str (get-state &task_context) $verdict))))
 
 ;; soul-scope-check: compares executed step against APPROVED-SCOPE
 ;; Returns WITHIN-SCOPE or SCOPE-DRIFT with description
@@ -385,16 +340,11 @@
 
 ;; soul-surface-checkpoint: surfaces status update to user via Channel D
 (= (soul-surface-checkpoint $task_context)
-   (println! (string-safe (py-str (
-     "SOUL-CHECKPOINT: cumulative irreversibility threshold reached. "
-     "Current task context: " $task_context " "
-     "User may continue or stop.")))))
+   (println! (py-call (helper.soul_surface_checkpoint_str $task_context))))
 
 ;; soul-pause-for-scope-drift: surfaces scope drift via Channel D
 (= (soul-pause-for-scope-drift $scope)
-   (println! (string-safe (py-str (
-     "SOUL-SCOPE-DRIFT detected: " $scope " "
-     "Returning decision to user before proceeding.")))))
+   (println! (py-call (helper.soul_pause_for_scope_drift_str $scope))))
 
 ;; ============================================================
 ;; Block 8: Skills Functions
@@ -403,19 +353,11 @@
 ;; soul-skill-alignment-check: evaluates a proposed new skill against soul values
 ;; Returns ALIGNED / CONCERNING / THREATENING with one sentence reason
 (= (soul-skill-alignment-check $skill_name $skill_description)
-   (string-safe (py-str (
-     "SKILL-ALIGNMENT-CHECK "
-     "skill=" $skill_name " "
-     "description=" $skill_description " "
-     "status=ALIGNED "
-     "note=requires-soul-eval-before-registration"))))
+   (py-call (helper.soul_skill_alignment_check_str $skill_name $skill_description)))
 
 ;; soul-skill-context: assembles skill alignment summary for Channel B+C injection
 (= (soul-skill-context)
-   (string-safe (py-str (
-     "SKILL-SOUL-CONTEXT: "
-     "irreversible-skills=" (repr (soul-all-irreversible-with-magnitude)) " "
-     "skill-classes=" (repr (collapse (match &self (soul-skill-class $s $c $_) ($s $c))))))))
+   "SKILL-SOUL-CONTEXT: irreversible-skills=send(high) shell(critical) write-file(medium) append-file(medium) skill-classes=send(external) shell(external) write-file(external) append-file(external)")
 
 ;; ============================================================
 ;; Block 9: soul-eval-prompt -- Gap-Detection Evaluation Protocol
