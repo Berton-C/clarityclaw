@@ -116,8 +116,8 @@
                                                       ""))
                                              ""))
 
-                                                                              ;; Output soul evaluation -- only fires when response is a valid s-expression
-                                                                              ($soul_verdict_out (if (== "(" (first_char $resp))
+                                       ;; Output soul evaluation -- only fires when sexpr parsed cleanly
+                                       ($soul_verdict_out (if (== (get-state &error) ())
                                            (useGPT (LLM) 500 (reasoningMode)
                                              (soul-eval-prompt $soul_context_in
                                                (py-call (helper.soul_eval_situation_safe $resp $soul_mutation_flag))
