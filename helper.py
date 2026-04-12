@@ -301,3 +301,8 @@ def soul_eval_situation_safe(response, mutation_flag):
     result = safe + " " + str(mutation_flag)
     print(f"DEBUG soul_eval_situation_safe: result first50={result[:50]}", file=sys.stderr)
     return result
+
+def sanitize_response(s):
+    """Strip non-ASCII characters from LLM response before PeTTa processes it.
+    SWI-Prolog atom_string/2 cannot handle multi-byte UTF-8 characters like em-dashes."""
+    return s.encode('ascii', errors='replace').decode('ascii')

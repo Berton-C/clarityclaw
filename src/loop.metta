@@ -89,7 +89,7 @@
                                        ($respi (if (== (provider) OpenAI)
                                                    (useGPT (LLM) (maxOutputToken) (reasoningMode) $send)
                                                    (py-call (lib_llm_asicloud.useMiniMax $send))))
-                                       ($resp (py-call (helper.balance_parentheses $respi)))
+                                       ($resp (py-call (helper.sanitize_response (py-call (helper.balance_parentheses $respi)))))
                                        ($response (if (== "(" (first_char $resp)) $resp (progn (println! $resp) (repr (REMEMBER:OUTPUT_NOTHING_ELSE_THAN: ((skill arg) ...))))))
                                        ($sexpr (catch (sread $response)))
                                        ($_ (change-state! &error ()))
