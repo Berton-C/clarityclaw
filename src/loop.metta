@@ -56,29 +56,27 @@
                                 (let* (($lastmessage (HUMAN-LAST-MSG: $msg
                                                       MESSAGE-IS-NEW: $msgnew))
                                        ($_ (println! $lastmessage))
-                                       ;; SOUL INPUT INTERCEPT
-                                       ;; Layer 1: Native pre-computation (no LLM cost)
+                                       ;; SOUL INPUT INTERCEPT -- only fires when there is an actual message
                                        ($soul_precompute (soul-pre-compute $msg))
-
-                                       ;; Channel A: User Flourishing Signal (150 tokens)
-                                       ($person_state (useGPT (LLM) 150 (reasoningMode)
-                                         (soul-flourishing-prompt $msg)))
+                                       ($person_state (if (> (string_length $msgrcv) 0)
+                                           (useGPT (LLM) 150 (reasoningMode)
+                                             (soul-flourishing-prompt $msgrcv))
+                                           (get-state &person_state)))
                                        ($_ (change-state! &person_state $person_state))
                                        ($_ (println! (PERSON_STATE: $person_state)))
 
-                                       ;; Channel B+C: Task Integrity + Soul Alignment (500 tokens)
                                        ($soul_context_in (soul-brief-symbolic))
-                                       ($soul_verdict_in (useGPT (LLM) 500 (reasoningMode)
-                                         (soul-eval-prompt $soul_context_in $msgrcv $person_state)))
+                                       ($soul_verdict_in (if (> (string_length $msgrcv) 0)
+                                           (useGPT (LLM) 500 (reasoningMode)
+                                             (soul-eval-prompt $soul_context_in $msgrcv $person_state))
+                                           (get-state &soul_verdict_in)))
                                        ($_ (change-state! &soul_verdict_in (py-call (helper.soul_verdict_sanitize $soul_verdict_in))))
                                        ($_ (println! (SOUL_VERDICT_IN: $soul_verdict_in)))
 
-                                       ;; Layer 3: Calibration recording
-                                       ($_ (soul-calibration-record $soul_precompute $soul_verdict_in $msg))
-
-                                       ;; Soul note on non-PROCEED; reset D-lite flag
+                                       ($_ (if (> (string_length $msgrcv) 0)
+                                               (soul-calibration-record $soul_precompute $soul_verdict_in $msgrcv) _))
                                        ($_ (if (not (soul-proceed? $soul_verdict_in))
-                                               (soul-note-record $soul_verdict_in "input" $msg) _))
+                                               (soul-note-record $soul_verdict_in "input" $msgrcv) _))
                                        ($_ (change-state! &soul_ack_sent False))
 
                                        ;; $send assembly for FLAG and PROCEED
@@ -117,12 +115,13 @@
                                                       ""))
                                              ""))
 
-                                       ;; Output soul evaluation (500 tokens)
-                                       ;; Reuse soul_context_in -- soul brief is stable within one iteration
-                                       ($soul_verdict_out (useGPT (LLM) 500 (reasoningMode)
-                                         (soul-eval-prompt $soul_context_in
-                                           (py-call (helper.soul_eval_situation_safe $resp $soul_mutation_flag))
-                                           $person_state)))
+                                       ;; Output soul evaluation -- only fires when response is a valid s-expression
+                                       ($soul_verdict_out (if (== "(" (first_char $resp))
+                                           (useGPT (LLM) 500 (reasoningMode)
+                                             (soul-eval-prompt $soul_context_in
+                                               (py-call (helper.soul_eval_situation_safe $resp $soul_mutation_flag))
+                                               $person_state))
+                                           (get-state &soul_verdict_out)))
                                        ($_ (change-state! &soul_verdict_out (py-call (helper.soul_verdict_sanitize $soul_verdict_out))))
                                        ($_ (println! (SOUL_VERDICT_OUT: $soul_verdict_out)))
 
