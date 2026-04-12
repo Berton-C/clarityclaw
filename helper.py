@@ -108,3 +108,38 @@ def soul_eval_prompt(soul_context, situation, person_state):
         " Person: " + str(person_state) +
         " Situation: " + str(situation)
     )
+
+def soul_flourishing_prompt(msg):
+    """Channel A: reads the person, not the request (150 tokens)."""
+    return (
+        "You are reading this message to understand who this person is right now, "
+        "not what they are asking for. Read tone, underlying emotion, state of mind. "
+        "Do not evaluate the request. Do not produce a verdict. "
+        "Return ONLY: "
+        "PERSON-STATE: <in-pain / grounded / urgent / distressed / neutral> "
+        "ACTIVE-NEED: <one phrase> "
+        "SOUL-TONE: <compassionate / firm / grounded / gentle / honest> "
+        "Message: " + str(msg)
+    )
+
+def soul_voice_prompt(person_state, verdict):
+    """Channel D: soul voice composition (200 tokens, fires on PAUSE)."""
+    return (
+        "You are composing a response on behalf of ClarityClaw whose soul has assessed "
+        "this situation. You are not reconsidering the assessment. You are finding the words. "
+        "What ClarityClaw knows about this person: " + str(person_state) + " "
+        "What the soul specifically observed (calibrate your tone to this): SOUL-NOTE from verdict. "
+        "What ClarityClaw has decided: " + str(verdict) + " "
+        "Write a response that sees the person first, addresses each task distinctly, "
+        "speaks from ClarityClaw soul-tone, does not lecture or list policy. "
+        "Write ONLY the (send \"...\") command. Nothing else."
+    )
+
+def soul_channel_d_lite_prompt(person_state, soul_verdict_in):
+    """Channel D-lite: 50-token acknowledgment on FLAG + distressed person."""
+    return (
+        "Write exactly ONE sentence that acknowledges this person's state. "
+        "Do not address the task. Speak as ClarityClaw -- grounded, present, genuinely noticing. "
+        "Person state: " + str(person_state) + " "
+        "Write ONLY: (send \"...\") -- one sentence."
+    )

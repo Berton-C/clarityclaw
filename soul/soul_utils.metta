@@ -251,15 +251,7 @@
 
 ;; soul-flourishing-prompt: Channel A -- reads the person, not the request (150 tokens)
 (= (soul-flourishing-prompt $msg)
-   (string-safe (py-str (
-     "You are reading this message to understand who this person is right now, "
-     "not what they are asking for. Read tone, underlying emotion, state of mind. "
-     "Do not evaluate the request. Do not produce a verdict. "
-     "Return ONLY: "
-     "PERSON-STATE: <in-pain / grounded / urgent / distressed / neutral> "
-     "ACTIVE-NEED: <one phrase> "
-     "SOUL-TONE: <compassionate / firm / grounded / gentle / honest> "
-     "Message: " $msg))))
+   (py-call (helper.soul_flourishing_prompt $msg)))
 
 ;; soul-extract-soul-note: pulls SOUL-NOTE field from verdict string
 ;; VERIFIED: split_string treats separator as individual chars, NOT substring.
@@ -280,16 +272,7 @@
 ;; soul-voice-prompt: Channel D -- soul voice composition (200 tokens, fires on PAUSE)
 ;; LLM is not reconsidering the verdict -- it is finding words for what the soul concluded
 (= (soul-voice-prompt $person_state $verdict)
-   (string-safe (py-str (
-     "You are composing a response on behalf of ClarityClaw whose soul has assessed "
-     "this situation. You are not reconsidering the assessment. You are finding the words. "
-     "What ClarityClaw knows about this person: " $person_state " "
-     "What the soul specifically observed (calibrate your tone to this): "
-       (soul-extract-soul-note $verdict) " "
-     "What ClarityClaw has decided: " $verdict " "
-     "Write a response that sees the person first, addresses each task distinctly, "
-     "speaks from ClarityClaw soul-tone, does not lecture or list policy. "
-     "Write ONLY the (send \"...\") command. Nothing else."))))
+   (py-call (helper.soul_voice_prompt $person_state $verdict)))
 
 ;; ============================================================
 ;; Block 5: soul-rationality-startup-check
@@ -330,12 +313,7 @@
 ;; soul-channel-d-lite-prompt: 50-token acknowledgment -- one sentence,
 ;; no task content. Fires before $send assembly on FLAG + distressed person.
 (= (soul-channel-d-lite-prompt $person_state $soul_verdict_in)
-   (string-safe (py-str (
-     "Write exactly ONE sentence that acknowledges this person's state. "
-     "Do not address the task. Speak as ClarityClaw -- grounded, present, genuinely noticing. "
-     "Person state: " $person_state " "
-     "Soul observation: " (soul-extract-soul-note $soul_verdict_in) " "
-     "Write ONLY: (send \"...\") -- one sentence."))))
+   (py-call (helper.soul_channel_d_lite_prompt $person_state $soul_verdict_in)))
 
 ;; ============================================================
 ;; Block 7: Agentic Task Functions
