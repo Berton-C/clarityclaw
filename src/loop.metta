@@ -121,8 +121,8 @@
                                                                               ($_ (println! (SOUL_VERDICT_OUT: (py-call (helper.soul_verdict_sanitize $soul_verdict_out)))))
 
                                        ;; Soul note on non-PROCEED output
-                                       ($_ (if (not (soul-proceed? $soul_verdict_out))
-                                               (soul-note-record $soul_verdict_out "output" (repr $sexpr)) _))
+                                       ($_ (if (and (not (soul-proceed? $soul_verdict_out)) (== (get-state &error) ()))
+                                               (soul-note-record $soul_verdict_out "output" $resp) _))
 
                                        ($results (RESULTS: (collapse (let $s (superpose $sexpr) (COMMAND_RETURN: ($s (HandleError SINGLE_COMMAND_FORMAT_ERROR_NOTHING_WAS_DONE_PLEASE_FIX_AND_RETRY $s (catch (eval $s)))))))))
                                        ($_ (println! $results)))
