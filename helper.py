@@ -277,6 +277,7 @@ def soul_send_assemble(prompt, soul_context, soul_verdict, person_state, soul_no
     soul_note_str = str(soul_note)
     note_section = (" SOUL-NOTE: " + soul_note_str) if soul_note_str else ""
     return (str(prompt) +
+            " SOUL_CONTEXT: " + str(soul_context) +
             " SOUL_VERDICT: " + verdict_summary +
             " PERSON_STATE: " + str(person_state) +
             note_section +
