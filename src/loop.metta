@@ -124,8 +124,7 @@
                                                $person_state)))
                                                 (if (== $sv (Error "output-verdict-failed")) (get-state &soul_verdict_out) $sv))
                                            (get-state &soul_verdict_out)))
-                                                                              ($_ (change-state! &soul_verdict_out (py-call (helper.soul_verdict_sanitize $soul_verdict_out))))
-                                                                              ($_ (println! (SOUL_VERDICT_OUT: $soul_verdict_out)))
+                                                                              ($_ (println! (SOUL_VERDICT_OUT: (py-call (helper.soul_verdict_sanitize $soul_verdict_out)))))
 
                                        ;; Soul note on non-PROCEED output
                                        ($_ (if (not (soul-proceed? $soul_verdict_out))
