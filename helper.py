@@ -255,12 +255,17 @@ def soul_skill_alignment_check_str(skill_name, skill_description):
 
 def soul_verdict_sanitize(verdict):
     """Sanitize soul verdict for PeTTa state storage -- strip newlines."""
-    return str(verdict).replace('\n', ' ').replace('\r', ' ')[:1000]
+    import sys
+    print(f"DEBUG soul_verdict_sanitize: input type={type(verdict)} value={str(verdict)[:100]}", file=sys.stderr)
+    result = str(verdict).replace('\n', ' ').replace('\r', ' ')[:1000]
+    print(f"DEBUG soul_verdict_sanitize: output={result[:100]}", file=sys.stderr)
+    return result
 
 def soul_send_assemble(prompt, soul_context, soul_verdict, person_state, soul_note, lastmessage):
-    """Assembles full $send string for main LLM. Soul verdict summarized to VERDICT line only."""
+    """Assembles $send for main agent LLM.
+    Soul brief excluded -- it confuses the agent about its role.
+    Only verdict outcome and person state included."""
     verdict_str = str(soul_verdict)
-    # Find the most specific verdict -- PAUSE > FLAG > PROCEED
     if "VERDICT: PAUSE" in verdict_str:
         verdict_summary = "VERDICT: PAUSE"
     elif "VERDICT: FLAG" in verdict_str:
@@ -269,13 +274,29 @@ def soul_send_assemble(prompt, soul_context, soul_verdict, person_state, soul_no
         verdict_summary = "VERDICT: PROCEED"
     else:
         verdict_summary = "VERDICT: PROCEED"
+    soul_note_str = str(soul_note)
+    note_section = (" SOUL-NOTE: " + soul_note_str) if soul_note_str else ""
     return (str(prompt) +
-            " SOUL_CONTEXT: " + str(soul_context) +
             " SOUL_VERDICT: " + verdict_summary +
             " PERSON_STATE: " + str(person_state) +
-            " SOUL-NOTE: " + str(soul_note) +
+            note_section +
             " " + str(lastmessage))
 
 def soul_mutation_lock_str(arg):
     """Assembles mutation lock string."""
     return "LOCKED: " + str(arg)
+
+def soul_eval_situation_safe(response, mutation_flag):
+    """Assembles situation string for output soul evaluation -- sanitizes response."""
+    safe_response = str(response).replace('"', "'").replace('\n', ' ').replace('\r', '')[:500]
+    return safe_response + " " + str(mutation_flag)
+
+def soul_eval_situation_safe(response, mutation_flag):
+    """Assembles situation string for output soul evaluation -- sanitizes response."""
+    import sys
+    print(f"DEBUG soul_eval_situation_safe: response type={type(response)} len={len(str(response))} first50={str(response)[:50]}", file=sys.stderr)
+    print(f"DEBUG soul_eval_situation_safe: mutation_flag={str(mutation_flag)[:50]}", file=sys.stderr)
+    safe = str(response).replace('"', "'").replace('\n', ' ').replace('\r', '')[:500]
+    result = safe + " " + str(mutation_flag)
+    print(f"DEBUG soul_eval_situation_safe: result first50={result[:50]}", file=sys.stderr)
+    return result
