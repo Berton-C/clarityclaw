@@ -118,7 +118,7 @@
 
                                        ;; Output soul evaluation -- only fires when sexpr parsed cleanly
                                        ($soul_verdict_out "VERDICT: PROCEED SOUL-NOTE: output-intercept-pending-runtime-fix")
-                                                                              ($_ (println! (SOUL_VERDICT_OUT: (py-call (helper.soul_verdict_sanitize $soul_verdict_out)))))
+                                       ($_ (println! (SOUL_VERDICT_OUT: $soul_verdict_out)))
 
                                        ;; Soul note on non-PROCEED output
                                        ($_ (if (and (not (soul-proceed? $soul_verdict_out)) (== (get-state &error) ()))
