@@ -69,7 +69,7 @@
                                        ;; Channel B+C: Task Integrity + Soul Alignment (500 tokens)
                                        ($soul_context_in (soul-brief-symbolic))
                                        ($soul_verdict_in (useGPT (LLM) 500 (reasoningMode)
-                                         (soul-eval-prompt $soul_context_in $msg $person_state)))
+                                         (soul-eval-prompt $soul_context_in $msgrcv $person_state)))
                                        ($_ (change-state! &soul_verdict_in $soul_verdict_in))
                                        ($_ (println! (SOUL_VERDICT_IN: $soul_verdict_in)))
 
@@ -122,7 +122,7 @@
                                        ($soul_context_out (soul-brief-symbolic))
                                        ($soul_verdict_out (useGPT (LLM) 500 (reasoningMode)
                                          (soul-eval-prompt $soul_context_out
-                                           (py-str ((repr $sexpr) " " $soul_mutation_flag))
+                                           (py-call (helper.soul_eval_situation (repr $sexpr) $soul_mutation_flag))
                                            $person_state)))
                                        ($_ (change-state! &soul_verdict_out $soul_verdict_out))
                                        ($_ (println! (SOUL_VERDICT_OUT: $soul_verdict_out)))

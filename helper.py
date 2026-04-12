@@ -171,3 +171,7 @@ def soul_brief_tier_a_static():
 def concat_strings(a, b):
     """Concatenate two strings with a space separator."""
     return str(a) + " " + str(b)
+
+def soul_eval_situation(sexpr_repr, mutation_flag):
+    """Assembles situation string for output soul evaluation."""
+    return str(sexpr_repr) + " " + str(mutation_flag)
