@@ -96,7 +96,10 @@
                                        ($_ (HandleError MULTI_COMMAND_FAILURE_NOTHING_WAS_DONE_PLEASE_CORRECT_PARENTHESES_AND_USE_QUOTES_AND_RETRY $response $sexpr))
                                        ($_ (println! (RESPONSE: $sexpr)))
 
-                                       ;; SOUL OUTPUT INTERCEPT -- only fires on valid s-expression
+                                       ;; SOUL OUTPUT INTERCEPT
+                                       ;; soul_verdict_out bound first -- always available regardless of metta gate
+                                       ($soul_verdict_out "VERDICT: PROCEED SOUL-NOTE: output-intercept-pending-runtime-fix")
+                                       ($_ (println! (SOUL_VERDICT_OUT: $soul_verdict_out)))
                                        ($metta_cmds (if (and (== "(" (first_char $resp)) (== (get-state &error) ()))
                                                        (collapse (superpose $sexpr))
                                                        ()))
@@ -116,9 +119,7 @@
                                                       ""))
                                              ""))
 
-                                       ;; Output soul evaluation -- only fires when sexpr parsed cleanly
-                                       ($soul_verdict_out "VERDICT: PROCEED SOUL-NOTE: output-intercept-pending-runtime-fix")
-                                       ($_ (println! (SOUL_VERDICT_OUT: $soul_verdict_out)))
+
 
                                        ;; Soul note on non-PROCEED output
                                        ($_ (if (and (not (soul-proceed? $soul_verdict_out)) (== (get-state &error) ()))
