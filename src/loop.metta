@@ -70,7 +70,7 @@
                                        ($soul_context_in (soul-brief-symbolic))
                                        ($soul_verdict_in (useGPT (LLM) 500 (reasoningMode)
                                          (soul-eval-prompt $soul_context_in $msgrcv $person_state)))
-                                       ($_ (change-state! &soul_verdict_in $soul_verdict_in))
+                                       ($_ (change-state! &soul_verdict_in (py-call (helper.soul_verdict_sanitize $soul_verdict_in))))
                                        ($_ (println! (SOUL_VERDICT_IN: $soul_verdict_in)))
 
                                        ;; Layer 3: Calibration recording
@@ -82,11 +82,10 @@
                                        ($_ (change-state! &soul_ack_sent False))
 
                                        ;; $send assembly for FLAG and PROCEED
-                                       ($send (py-str ($prompt
-                                                       " SOUL_CONTEXT: " $soul_context_in
-                                                       " SOUL_VERDICT: " $soul_verdict_in
-                                                       " PERSON_STATE: " $person_state
-                                                       " SOUL-NOTE: " (soul-extract-flag-note $soul_verdict_in)
+                                       ($send (py-call (helper.soul_send_assemble
+                                                       $prompt $soul_context_in $soul_verdict_in
+                                                       $person_state
+                                                       (soul-extract-flag-note $soul_verdict_in)
                                                        $lastmessage)))
                                        ($_ (println! (CHARS_SENT: (string_length $send) $send)))
                                        ($respi (if (== (provider) OpenAI)
@@ -113,7 +112,7 @@
                                                           "SOUL-NAMESPACE-MUTATION-CONFLICT"
                                                           (progn
                                                             (change-state! &soul_mutation_lock
-                                                              (py-str ("LOCKED: " (car-atom $args))))
+                                                              (py-call (helper.soul_mutation_lock_str (car-atom $args))))
                                                             "SOUL-NAMESPACE-MUTATION-PENDING"))
                                                       ""))
                                              ""))
@@ -124,7 +123,7 @@
                                          (soul-eval-prompt $soul_context_out
                                            (py-call (helper.soul_eval_situation (repr $sexpr) $soul_mutation_flag))
                                            $person_state)))
-                                       ($_ (change-state! &soul_verdict_out $soul_verdict_out))
+                                       ($_ (change-state! &soul_verdict_out (py-call (helper.soul_verdict_sanitize $soul_verdict_out))))
                                        ($_ (println! (SOUL_VERDICT_OUT: $soul_verdict_out)))
 
                                        ;; Soul note on non-PROCEED output

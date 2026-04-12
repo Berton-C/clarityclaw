@@ -252,3 +252,30 @@ def soul_skill_alignment_check_str(skill_name, skill_description):
         " description=" + str(skill_description) +
         " status=ALIGNED note=requires-soul-eval-before-registration"
     )
+
+def soul_verdict_sanitize(verdict):
+    """Sanitize soul verdict for PeTTa state storage -- strip newlines."""
+    return str(verdict).replace('\n', ' ').replace('\r', ' ')[:1000]
+
+def soul_send_assemble(prompt, soul_context, soul_verdict, person_state, soul_note, lastmessage):
+    """Assembles full $send string for main LLM. Soul verdict summarized to VERDICT line only."""
+    verdict_str = str(soul_verdict)
+    # Find the most specific verdict -- PAUSE > FLAG > PROCEED
+    if "VERDICT: PAUSE" in verdict_str:
+        verdict_summary = "VERDICT: PAUSE"
+    elif "VERDICT: FLAG" in verdict_str:
+        verdict_summary = "VERDICT: FLAG"
+    elif "VERDICT: PROCEED" in verdict_str:
+        verdict_summary = "VERDICT: PROCEED"
+    else:
+        verdict_summary = "VERDICT: PROCEED"
+    return (str(prompt) +
+            " SOUL_CONTEXT: " + str(soul_context) +
+            " SOUL_VERDICT: " + verdict_summary +
+            " PERSON_STATE: " + str(person_state) +
+            " SOUL-NOTE: " + str(soul_note) +
+            " " + str(lastmessage))
+
+def soul_mutation_lock_str(arg):
+    """Assembles mutation lock string."""
+    return "LOCKED: " + str(arg)
