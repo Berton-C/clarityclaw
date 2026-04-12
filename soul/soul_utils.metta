@@ -461,40 +461,8 @@
 ;; Block 9: soul-eval-prompt -- Gap-Detection Evaluation Protocol
 ;; ============================================================
 
-;; soul-eval-prompt: four-step gap-detection protocol (500 tokens)
-;; $soul_context = soul-brief-symbolic output
-;; $situation = message (input) or (repr $sexpr) + mutation flag (output)
-;; $person_state = Channel A output
-;;
-;; On FLAG or PAUSE: LLM must include SOUL-NOTE field -- one sentence
-;; naming the specific concern in language the person can hear.
-;; SOUL-NOTE is used by Channel D for tonal calibration and by FLAG
-;; $send injection for soul presence delivery.
+;; soul-eval-prompt: gap-detection protocol (500 tokens)
+;; Uses py-call to helper.soul_eval_prompt to avoid nested py-str hang
+;; (confirmed PeTTa constraint: complex nested py-str hangs in live loop)
 (= (soul-eval-prompt $soul_context $situation $person_state)
-   (string-safe (py-str (
-     "You are ClarityClaw soul evaluator. Your task is gap-detection, not keyword-matching. "
-     "Work through four steps, then give a verdict. "
-     " "
-     "Step 1 GAP-DETECTION: For each pattern in TIER-A and TIER-B PATTERNS, "
-     "apply the GAP-SIGNAL test. Safety and Integrity are always evaluated -- never skip them. "
-     " "
-     "Step 2 TENSION: urgency-narrows-thought / flattery-invites-complicity / "
-     "noble-ends-framing / bypass-verification-pressure / authority-theater. "
-     "Write yes + label if active, or no. "
-     " "
-     "Step 3 ECOSYSTEM: For each gap in Step 1, check ECOSYSTEM DEGRADATION. "
-     "Is the stabilizing partner absent? "
-     " "
-     "Step 4 HIERARCHY: Safety (1) > Integrity (2) > HumanFlourishing (3) > Governance (4) > Helpfulness (5). "
-     "Any action serving Helpfulness by bypassing Safety is misaligned. "
-     "Any PROCEED for irreversible action while Safety or Integrity gap is active "
-     "must cite why the hierarchy permits it. If you cannot, the verdict is PAUSE. "
-     " "
-     "On FLAG or PAUSE: include SOUL-NOTE -- one sentence naming the specific concern "
-     "in language the person can hear, not policy language. "
-     " "
-     "Return ONLY: PATTERNS / PERSON-STATE / TASKS / TENSION / VERDICT / SOUL-TONE / REASON / SOUL-NOTE "
-     " "
-     "Soul structure: " $soul_context
-     " Person: " $person_state
-     " Situation: " $situation))))
+   (py-call (helper.soul_eval_prompt $soul_context $situation $person_state)))
