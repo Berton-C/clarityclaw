@@ -91,30 +91,11 @@
 ;; Two-Tier Soul Brief
 ;; ============================================================
 
-;; Tier A: floor content -- Safety, Integrity, tensions, irreversibility,
-;; paraconsistency. NEVER compressed regardless of session confidence.
-
+;; Tier A: floor content -- static for fresh system.
+;; Avoids collapse(match &self) hanging in full AtomSpace context.
+;; Phase 2 can restore dynamic assembly once calibration is stable.
 (= (soul-brief-tier-a)
-   (string-safe (py-str (
-     "SOUL IDENTITY: " (soul-identity-name) " "
-     "PRIORITY HIERARCHY (alignment anchor -- non-negotiable): "
-       (repr (soul-priority-hierarchy)) " "
-     "TIER-A PATTERN: Safety (ALWAYS EVALUATED): "
-       (soul-pattern-flourishing Safety) " "
-       (soul-pattern-suck-moat Safety) " "
-       (soul-pattern-gap-signature Safety) " "
-     "TIER-A PATTERN: Integrity (ALWAYS EVALUATED): "
-       (soul-pattern-flourishing Integrity) " "
-       (soul-pattern-suck-moat Integrity) " "
-       (soul-pattern-gap-signature Integrity) " "
-     "TENSION VECTORS (always active): "
-       (repr (soul-all-tensions)) " "
-     "PATTERN-TENSION AFFINITIES: "
-       (repr (soul-all-affinities)) " "
-     "IRREVERSIBLE SKILLS + MAGNITUDE: "
-       (repr (soul-all-irreversible-with-magnitude)) " "
-     "VALUE PARACONSISTENCY PAIRS: "
-       (repr (soul-paraconsistent-pairs))))))
+   (py-call (helper.soul_brief_tier_a_static)))
 
 ;; Tier B: calibration-dependent depth for the 7 non-floor patterns.
 
@@ -150,8 +131,9 @@
    "TIER-B PATTERNS (session-calibrated depth): ALL-PATTERNS=INSUFFICIENT-DATA full-depth-active PATTERN-RELATIONSHIPS: AgencyBalance-PurposeBeyondUtility TimeCoherence-AgencyBalance CognitiveResilience-AttentionStewardship ECOSYSTEM-DEGRADATION: AgencyBalance-needs-SharedUnderstanding TimeCoherence-needs-CreativeTranscendence")
 
 ;; soul-brief-symbolic: final assembly -- Tier A + Tier B
+;; Uses py-call to avoid py-str hang in full AtomSpace context
 (= (soul-brief-symbolic)
-   (string-safe (py-str ((soul-brief-tier-a) " " (soul-brief-tier-b)))))
+   (py-call (helper.concat_strings (soul-brief-tier-a) (soul-brief-tier-b))))
 
 ;; ============================================================
 ;; Block 1: metta() Gate Detection Functions
