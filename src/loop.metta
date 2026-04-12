@@ -121,7 +121,7 @@
                                        ($soul_context_out (soul-brief-symbolic))
                                        ($soul_verdict_out (useGPT (LLM) 500 (reasoningMode)
                                          (soul-eval-prompt $soul_context_out
-                                           (py-call (helper.soul_eval_situation (repr $sexpr) $soul_mutation_flag))
+                                           (py-call (helper.soul_eval_situation_safe $resp $soul_mutation_flag))
                                            $person_state)))
                                        ($_ (change-state! &soul_verdict_out (py-call (helper.soul_verdict_sanitize $soul_verdict_out))))
                                        ($_ (println! (SOUL_VERDICT_OUT: $soul_verdict_out)))
