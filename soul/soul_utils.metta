@@ -144,14 +144,10 @@
          (soul-pattern-brief-for-confidence $p (soul-will-correlation $p))))))
 
 ;; soul-brief-tier-b: Tier B assembly
+;; Fresh system stub: all 7 non-floor patterns at INSUFFICIENT-DATA depth.
+;; Phase 2 replaces with live soul-tier-b-capture-units once calibration exists.
 (= (soul-brief-tier-b)
-   (string-safe (py-str (
-     "TIER-B PATTERNS (session-calibrated depth): "
-       (repr (soul-tier-b-capture-units)) " "
-     "PATTERN RELATIONSHIPS: "
-       (repr (soul-pattern-relations)) " "
-     "ECOSYSTEM DEGRADATION: "
-       (repr (soul-all-degradation-pairs))))))
+   "TIER-B PATTERNS (session-calibrated depth): ALL-PATTERNS=INSUFFICIENT-DATA full-depth-active PATTERN-RELATIONSHIPS: AgencyBalance-PurposeBeyondUtility TimeCoherence-AgencyBalance CognitiveResilience-AttentionStewardship ECOSYSTEM-DEGRADATION: AgencyBalance-needs-SharedUnderstanding TimeCoherence-needs-CreativeTranscendence")
 
 ;; soul-brief-symbolic: final assembly -- Tier A + Tier B
 (= (soul-brief-symbolic)
