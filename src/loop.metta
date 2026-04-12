@@ -97,7 +97,7 @@
                                        ($_ (println! (RESPONSE: $sexpr)))
 
                                        ;; SOUL OUTPUT INTERCEPT -- only fires on valid s-expression
-                                       ($metta_cmds (if (== "(" (first_char $resp))
+                                       ($metta_cmds (if (and (== "(" (first_char $resp)) (== (get-state &error) ()))
                                                        (collapse (superpose $sexpr))
                                                        ()))
                                        ($soul_mutation_flag
