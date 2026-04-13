@@ -282,78 +282,92 @@ Added in Stage 5: soul_eval_prompt, soul_flourishing_prompt, soul_voice_prompt, 
 
 ### Why migrate now
 - atom_string/2 crashes are base runtime issues not soul issues
-- OmegaClaw has improved runtime, Dockerfile, ChromaDB handling
+- OmegaClaw has improved runtime, Dockerfile, and critically -- normalize_string fixes C7
 - Soul code is self-contained and portable
 - Patching around Patrick's runtime constraints is the wrong investment
 
-### Decisions to make during migration
+### What we know about OmegaClaw (read April 13, 2026 -- commit 9509a7d)
+
+**See ClarityClaw_OmegaClaw_Merge_Checklist.md for the complete step-by-step process.**
+
+Three critical discoveries from reading OmegaClaw's actual code:
+
+**Discovery 1: normalize_string resolves C7.**
+OmegaClaw wraps every command eval result in Python before Prolog processes it:
+```
+(catch (let $R (eval $s) (py-call (helper.normalize_string $R))))
+```
+`normalize_string` in `src/helper.py` converts any eval return value -- including raw ChromaDB Prolog terms -- to a clean UTF-8 string. This is the fix for the atom_string/2 crash on $results that blocked Mattermost responses. Migration likely resolves C7 automatically with no additional soul code changes.
+
+**Discovery 2: Local embeddings -- no OpenAI API key needed.**
+OmegaClaw uses `sentence-transformers` with `intfloat/e5-large-v2`, pre-downloaded at build time. Embeddings run entirely locally. Only one API key required (Anthropic or OpenAI for LLM -- not for embeddings). The two-API-key requirement from our current base is eliminated.
+
+**Discovery 3: helper.py moved to src/.**
+OmegaClaw's helper.py is at `src/helper.py`, not repo root. Our soul code calls `py-call (helper.function_name ...)`. This requires either merging our functions into their `src/helper.py` or adding repo root to PYTHONPATH. Recommended: merge into `src/helper.py`. Their `balance_parentheses` and `normalize_string` must be preserved -- do not overwrite.
+
+### Key structural differences confirmed
+
+| Aspect | Current ClarityClaw | OmegaClaw |
+|--------|-------------------|-----------|
+| Repo path | /app/PeTTa/repos/mettaclaw | /PeTTa/repos/omegaclaw |
+| helper.py location | repo root | src/helper.py |
+| Dockerfile | Single-stage, Ubuntu | Multi-stage, swipl:9.2.4, non-root |
+| Embeddings | OpenAI text-embedding-3-large | Local sentence-transformers |
+| LLM provider default | OpenAI | Anthropic (lib_llm_ext.useClaude) |
+| normalize_string in eval | absent (C7 crash) | present (C7 resolved) |
+| Loop variable | maxLoops | maxNewInputLoops |
+| New loop feature | none | maxWakeLoops + wakeupInterval |
+| lib name | lib_mettaclaw.metta | lib_omegaclaw.metta |
+| prompt.txt permissions | read-write | chmod 0444 (read-only at build) |
+
+### Decisions still to be made during migration
 
 **Decision 1: Fork strategy**
-Option A: Fork OmegaClaw as new repo (Berton-C/clarityclaw-v2) -- recommended
-Option B: New branch on existing repo
-Option C: Rebase current clarityclaw onto OmegaClaw
+Option A: Clone OmegaClaw fresh, transplant soul files -- recommended
+Option B: New branch on existing clarityclaw repo
+Option C: Rebase (not recommended -- histories are incompatible)
 
 **Decision 2: Local uncommitted changes**
-Current repo has uncommitted modifications to: channels/irc.py, channels/mattermost.py, src/channels.metta, src/memory.metta, src/skills.metta, src/utils.metta, run.metta, memory/LTM.metta.
-Decide before migrating: which of these changes carry forward vs discard.
+Current repo has uncommitted modifications to: channels/irc.py, channels/mattermost.py, src/channels.metta, src/memory.metta, src/skills.metta, src/utils.metta, run.metta, memory/LTM.metta. Decide which carry forward before migrating.
 
-**Decision 3: Mattermost vs IRC**
-OmegaClaw may use IRC as primary channel. Decide whether to maintain Mattermost integration or switch for initial testing.
-
-**Decision 4: PAUSE routing implementation**
-During migration, implement the PAUSE branch not completed in current base. Requires:
-- Channel D as body of let* (not a binding) when verdict is PAUSE
-- (change-state! &loops 0) to halt the loop
+**Decision 3: PAUSE routing implementation**
+Now implement the PAUSE branch missing from current base:
+- Channel D as body of let*, not a binding
+- (change-state! &loops 0) to halt -- uses maxNewInputLoops in OmegaClaw
 - soul-voice-prompt result evaluated and sent directly
 
-**Decision 5: Channel D-lite implementation**
-During migration, wire Channel D-lite into FLAG branch:
-- Check soul-person-needs-acknowledgment? on $person_state
-- If true, call soul-channel-d-lite-prompt and eval/send result before $send assembly
+**Decision 4: Channel D-lite implementation**
+Wire Channel D-lite into FLAG branch for distressed persons.
 
-**Decision 6: Output soul evaluation**
-During migration, restore output useGPT call now that runtime issues may be resolved in OmegaClaw. Use $resp (sanitized) not (repr $sexpr) as situation argument.
+**Decision 5: Output soul evaluation**
+Restore output useGPT call -- OmegaClaw's normalize_string likely makes it stable. Use $resp (sanitized) not (repr $sexpr) as situation argument.
 
-### Questions to answer before writing code
+### Questions now answered
 
-- Does OmegaClaw's loop.metta still use useGPT as LLM interface?
-- Does $msgrcv still exist or has the variable been renamed?
-- Does OmegaClaw's query skill return clean stringifiable results?
-- Is addToHistory still in OmegaClaw or replaced?
-- Does OmegaClaw's Dockerfile already set PYTHONPATH correctly?
-- Does OmegaClaw use balance_parentheses or different response cleanup?
-- What chromadb version does OmegaClaw use and is the API compatible?
+These questions were open before reading OmegaClaw. All are now answered:
 
-### Migration sequence
+- Does OmegaClaw use useGPT? YES for OpenAI, plus lib_llm_ext.useClaude for Anthropic
+- Does $msgrcv still exist? YES -- same variable name
+- Does query return clean results? YES -- normalize_string wraps all eval results
+- Is addToHistory still present? YES -- same structure
+- Is PYTHONPATH set in Dockerfile? NO -- helper.py is in src/, use Decision 1 above
+- Does OmegaClaw use balance_parentheses? YES -- improved version in src/helper.py
+- What chromadb version? Cloned from patham9/petta_lib_chromadb at build time -- same source as ours
 
-Phase 1: Read before writing
-1. Clone OmegaClaw: git clone https://github.com/asi-alliance/OmegaClaw-Core
-2. Read src/loop.metta completely -- map every variable and function
-3. Read Dockerfile -- note PYTHONPATH, build sequence, repo cloning
-4. Read src/memory.metta -- check query skill return format
-5. Compare with current clarityclaw to identify all differences
+### Migration sequence (summary -- full detail in Merge Checklist)
 
-Phase 2: Prepare soul files
-6. Verify soul/ directory has no remaining py-str in function definitions
-7. Verify helper.py has all functions from Section 9
-8. Run Stage 1-4 test suite against OmegaClaw base before adding soul intercepts
-
-Phase 3: Apply intercepts
-9. Apply 5a state variables to OmegaClaw's initLoop
-10. Apply 5a startup block
-11. Apply 5b input intercept using Python script (not manual editing)
-12. Add sanitize_response between balance_parentheses and sread
-13. Apply 5c output intercept -- implement PAUSE routing (Channel D) this time
-14. Implement Channel D-lite in FLAG branch
-15. Restore output soul evaluation if OmegaClaw runtime is stable
-
-Phase 4: Test
-16. Build with --no-cache, delete flag, verify seeding
-17. Run Stage 1-4 tests to confirm soul loads
-18. Send test message, verify full sequence: PERSON_STATE -> SOUL_VERDICT_IN -> RESPONSE -> agent responds
-19. Test PAUSE scenario: verify Channel D fires and loop halts
-20. Test FLAG scenario: verify SOUL-NOTE injection
-21. Test FLAG + distressed: verify Channel D-lite fires first
+1. Tag current repo as v1-pre-omegaclaw
+2. Clone OmegaClaw fresh
+3. Copy soul/ directory wholesale
+4. Merge our helper.py functions into OmegaClaw's src/helper.py (preserve their functions)
+5. Copy modified memory/prompt.txt
+6. Apply 5a state variables and startup block to OmegaClaw's initLoop
+7. Apply 5b input intercept using Python fix scripts
+8. Add sanitize_response between balance_parentheses and sread
+9. Apply 5c output intercept -- implement PAUSE routing this time
+10. Implement Channel D-lite in FLAG branch
+11. Build, verify seeding, run Stage 1-4 tests
+12. Send test message -- if normalize_string resolved C7, agent responds on first attempt
 
 ---
 
