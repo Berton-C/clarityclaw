@@ -126,7 +126,7 @@
                                                (soul-note-record $soul_verdict_out "output" $resp) _))
 
                                        ($results (RESULTS: (collapse (let $s (superpose $sexpr) (COMMAND_RETURN: ($s (HandleError SINGLE_COMMAND_FORMAT_ERROR_NOTHING_WAS_DONE_PLEASE_FIX_AND_RETRY $s (catch (eval $s)))))))))
-                                       ($_ (println! $results))
+                                       ($_ (println! "RESULTS-DONE"))
                                        ($_ (println! "DEBUG-RESULTS-PRINTED")))
                                       (progn (if (or $msgnew  (not (== $sexpr ()))) (addToHistory $msg $response $sexpr $msgnew) _)
                                              (change-state! &lastresults (string-safe (repr $results))))) _))
